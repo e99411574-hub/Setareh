@@ -33,45 +33,43 @@ const AUTH = (() => {
     setTimeout(() => { el.style.display = 'none'; }, 4000);
   }
 
+  // ---- مخفی کردن دکمه‌ها ----
+  function hideAuthButtons() {
+    let count = 0;
+    document.querySelectorAll('*').forEach(el => {
+      if (el.children.length === 0) {
+        const t = (el.textContent || '').trim();
+        // هر عنصری که «ورود» و «ثبت» رو با هم داره
+        if (t.includes('ورود') && t.includes('ثبت')) {
+          const parent = el.closest('.menu-item, .sidebar-item, li, a, button') || el.parentElement;
+          if (parent) {
+            parent.style.display = 'none';
+            count++;
+          }
+        }
+      }
+    });
+    console.log('🚫 دکمه‌های ورود/ثبت‌نام مخفی شدند:', count);
+  }
+
   // ---- راه‌اندازی ----
   function init() {
     console.log('🚧 AUTH: غیرفعال (بزودی فعال میشه)');
 
-    // ۱) مخفی کردن دکمهٔ ورود/ثبت‌نام از منو
-    document.querySelectorAll(
-      '[data-route="auth"], .menu-item, .sidebar-item, nav a, button'
-    ).forEach(el => {
-      const txt = (el.textContent || '').trim();
-      if (txt.includes('ورود') || txt.includes('ثبت‌نام') || txt.includes('ثبت نام')) {
-        el.style.display = 'none';
-        console.log('🚫 مخفی شد:', txt);
-      }
-    });
+    // مخفی کردن دکمه‌های ورود
+    hideAuthButtons();
 
-    // ۲) مخفی کردن صفحهٔ auth اگه باز شد
-    const authView = document.getElementById('view-auth');
-    if (authView) {
-      // اگه کسی رفتش، پیام نشون بده
-      const observer = new MutationObserver(() => {
-        if (authView.style.display !== 'none' && authView.style.display !== '') {
-          console.log('⚠️ کاربر رفت به صفحهٔ auth — بستن...');
-          authView.style.display = 'none';
-          const home = document.getElementById('view-home');
-          if (home) home.style.display = 'block';
-          alert('🚧 ورود و ثبت‌نام بزودی فعال میشه!\nفعلاً می‌تونی از همهٔ امکانات اپ استفاده کنی.');
-        }
-      });
-      observer.observe(authView, { attributes: true, attributeFilter: ['style', 'class'] });
-    }
+    // هر ۱ ثانیه چک کن (اگه منو دوباره باز شد)
+    setInterval(hideAuthButtons, 1000);
 
-    // ۳) پاک کردن هر سشن قدیمی
+    // پاک کردن سشن قدیمی
     try {
       localStorage.removeItem('setareh_session');
       localStorage.removeItem('setareh_user');
       console.log('🧹 سشن قدیمی پاک شد');
     } catch(e) {}
 
-    // ۴) کارت پروفایل رو مخفی کن اگه هست
+    // کارت پروفایل
     const statusCard = document.getElementById('userStatusCard');
     if (statusCard) {
       statusCard.innerHTML = `
@@ -91,6 +89,23 @@ const AUTH = (() => {
     isLoggedIn, getUser, getSession,
     renderStatusCard, showMsg
   };
+})();
+
+// ⚡ راه‌اندازی خودکار
+(function autoStart(){
+  const start = () => {
+    if (typeof AUTH !== 'undefined' && AUTH.init) {
+      AUTH.init();
+      console.log('✅ AUTH.init خودکار اجرا شد');
+    }
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(start, 300));
+  } else {
+    setTimeout(start, 300);
+  }
+  // چک دوباره بعد از ۲ ثانیه
+  setTimeout(start, 2000);
 })();
 
 console.log('🚧 AUTH: حالت غیرفعال لود شد');
