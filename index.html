@@ -134,8 +134,8 @@
 
 <!-- ============ اسکریپت‌ها ============ -->
 
-<!-- ۰. کتابخانهٔ Supabase (CDN) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- ۰. کتابخانهٔ Supabase (CDN جایگزین: unpkg) -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
 <!-- ۱. پایه -->
 <script src="js/i18n.js"></script>
@@ -207,8 +207,10 @@
     };
   }
 </script>
-<!-- Eruda Console (برای دیباگ) -->
+
+<!-- Eruda Console (برای دیباگ - بعداً پاک کن) -->
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <script>eruda.init();</script>
+
 </body>
 </html>
