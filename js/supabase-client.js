@@ -2,7 +2,7 @@
 
 // ⚠️ این دو مقدار رو از یادداشت گوشیت کپی کن
 var SUPABASE_URL = 'https://qsibyylhwfadlyoqlemt.supabase.co';
-var SUPABASE_KEY = 'REPLACE_WITH_YOUR_PUBLISHABLE_KEY';
+var SUPABASE_KEY = 'sb_publishable_b5P5qNBF0jaA-nBN8pxrBQ_X5SMzc2w';
 
 // ============ راه‌اندازی کلاینت ============
 var supabase = null;
