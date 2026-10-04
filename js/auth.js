@@ -1,12 +1,22 @@
 // ===== auth.js - ورود و ثبت‌نام کاربران =====
 
 var AUTH = {
-  mode: 'login',       // 'login' یا 'signup'
+  mode: 'login',
   loading: false,
   error: '',
   success: '',
 
   // ============ شروع ============
+  init: function() {
+    this.mode = 'login';
+    this.error = '';
+    this.success = '';
+    this.loading = false;
+    // اگه کاربر قبلاً لاگین کرده، سشنش رو بارگذاری کن
+    if (typeof SB !== 'undefined' && SB.init) SB.init();
+    this.refresh();
+  },
+
   start: function() {
     this.mode = 'login';
     this.error = '';
@@ -35,7 +45,6 @@ var AUTH = {
     var email = emailEl.value.trim();
     var password = passEl.value;
 
-    // بررسی
     this.error = '';
     this.success = '';
 
@@ -66,13 +75,18 @@ var AUTH = {
     if (this.mode === 'login') {
       promise = SB.signIn(email, password);
     } else {
-      promise = SB.signUp(email, password);
+      // ثبت‌نام: بعد از ساخت حساب، خودکار وارد می‌شه
+      promise = SB.signUp(email, password).then(function(data) {
+        // اگه سشن نداشت (چون تأیید ایمیل لازمه)، خودکار ورود کن
+        if (!data || !data.access_token) {
+          return SB.signIn(email, password);
+        }
+        return data;
+      });
     }
 
     promise.then(function(data) {
       self.loading = false;
-
-      // بعد از ورود موفق، پروفایل رو بساز یا پیدا کن
       return self._ensureProfile(data.user);
     }).then(function() {
       self.success = self.mode === 'login'
@@ -81,7 +95,6 @@ var AUTH = {
       if (typeof playSnd === 'function') playSnd('success');
       self.refresh();
 
-      // بعد از ۱.۵ ثانیه برو به صفحهٔ خانه
       setTimeout(function() {
         if (typeof ROUTER !== 'undefined') ROUTER.go('home');
       }, 1500);
@@ -111,13 +124,10 @@ var AUTH = {
   _ensureProfile: function(user) {
     if (!user) return Promise.resolve();
 
-    var self = this;
-    // ببین پروفایل هست یا نه
     return SB._request('/rest/v1/users?select=*&auth_id=eq.' + user.id + '&limit=1', {
       method: 'GET'
     }).then(function(res) {
       if (res.ok && res.data && res.data.length > 0) {
-        // پروفایل هست — ذخیره‌ش کن
         var profile = res.data[0];
         if (typeof STATE !== 'undefined') {
           var stateUser = STATE.getUser() || {};
@@ -217,11 +227,17 @@ var AUTH = {
   render: function() {
     var html = '<div class="auth-page">';
 
-    // نوار بالا
     html += '<div class="auth-topbar">';
     html += '<button class="auth-back" onclick="AUTH.back()">›</button>';
     html += '<div class="auth-title">🔐 حساب کاربری</div>';
     html += '</div>';
+
+    // اگه کاربر لاگین هست، کارت وضعیت نشون بده
+    if (typeof SB !== 'undefined' && SB.isLoggedIn && SB.isLoggedIn()) {
+      html += this.renderStatusCard();
+      html += '</div>';
+      return html;
+    }
 
     // لوگو
     html += '<div class="auth-logo">';
@@ -236,12 +252,10 @@ var AUTH = {
     html += '<button class="auth-tab ' + (this.mode === 'signup' ? 'active' : '') + '" onclick="AUTH.setMode(\'signup\')">✨ ثبت‌نام</button>';
     html += '</div>';
 
-    // پیام خطا
     if (this.error) {
       html += '<div class="auth-error">⚠️ ' + this.error + '</div>';
     }
 
-    // پیام موفقیت
     if (this.success) {
       html += '<div class="auth-success">' + this.success + '</div>';
     }
@@ -267,10 +281,8 @@ var AUTH = {
 
     html += '</div>';
 
-    // دکمهٔ ادامه به‌عنوان مهمان
     html += '<button class="auth-guest" onclick="AUTH.continueAsGuest()">👤 بدون ثبت‌نام ادامه بده</button>';
 
-    // توضیحات
     html += '<div class="auth-note">';
     html += '<span class="icon">💡</span>';
     html += '<span>اگه وارد بشی، سکه‌ها، جم و آمارت روی سرور ذخیره می‌شه و روی هر گوشی می‌تونی استفاده کنی.</span>';
@@ -280,10 +292,10 @@ var AUTH = {
     return html;
   },
 
-  // ============ کارت وضعیت (توی پروفایل) ============
+  // ============ کارت وضعیت (توی پروفایل و صفحهٔ auth) ============
   renderStatusCard: function() {
-    var isLoggedIn = SB.isLoggedIn();
-    var user = SB.getUser();
+    var isLoggedIn = (typeof SB !== 'undefined' && SB.isLoggedIn) ? SB.isLoggedIn() : false;
+    var user = (typeof SB !== 'undefined' && SB.getUser) ? SB.getUser() : null;
     var stateUser = (typeof STATE !== 'undefined' && STATE.getUser) ? STATE.getUser() : {};
     var email = user && user.email ? user.email : (stateUser.email || '');
 
@@ -318,7 +330,6 @@ var AUTH = {
     var c = document.getElementById('authContent');
     if (c) {
       c.innerHTML = this.render();
-      // فوکوس روی ایمیل
       setTimeout(function() {
         var e = document.getElementById('authEmail');
         if (e && !AUTH.loading) e.focus();
