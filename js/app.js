@@ -12,6 +12,29 @@ var APP = {
 
     STATE.init();
 
+    // تست اتصال Supabase
+    var self = this;
+    setTimeout(function() {
+      if (typeof SB !== 'undefined' && SB.testConnection) {
+        SB.testConnection().then(function() {
+          console.log('✅ Supabase ready');
+          if (typeof showToast === 'function') {
+            showToast('✅ اتصال به سرور برقرار شد');
+          }
+        }).catch(function(err) {
+          console.warn('⚠️ Supabase test failed:', err);
+          if (typeof showToast === 'function') {
+            showToast('⚠️ اتصال به سرور برقرار نشد');
+          }
+        });
+      } else {
+        console.warn('⚠️ SB not defined');
+        if (typeof showToast === 'function') {
+          showToast('⚠️ SB تعریف نشده');
+        }
+      }
+    }, 3000);
+
     var lang = STATE.get('settings.lang') || 'fa';
     if (typeof setLanguage === 'function') setLanguage(lang);
 
@@ -163,10 +186,7 @@ var APP = {
   },
 
   _getPoemOfDay: function() {
-    // اگه قبلاً لود شده، از کش استفاده کن
     var poems = this._poemsCache;
-
-    // اگه لود نشده، یه بار fetch کن (async)
     if (!poems) {
       var self = this;
       fetch('assets/poems.json')
@@ -174,7 +194,6 @@ var APP = {
         .then(function(data) {
           if (data && data.poems && data.poems.length > 0) {
             self._poemsCache = data.poems;
-            // رندر مجدد اگه لازمه
             if (document.getElementById('homeContent') &&
                 document.getElementById('homeContent').innerHTML.indexOf('poem-card') >= 0) {
               self.renderHome();
@@ -185,7 +204,6 @@ var APP = {
           console.warn('Poems load error:', e);
         });
 
-      // فوری از لیست پیش‌فرض استفاده کن
       poems = [
         { poet: 'حافظ', text: 'دوش دیدم که ملائک در میخانه زدند\nگل آدم بسرشتند و به پیمانه زدند' },
         { poet: 'سعدی', text: 'بنی آدم اعضای یک پیکرند\nکه در آفرینش ز یک گوهرند' },
