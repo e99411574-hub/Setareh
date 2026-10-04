@@ -1,0 +1,402 @@
+/* ===== auth.css - صفحهٔ ورود و ثبت‌نام ===== */
+
+.auth-page {
+  padding-bottom: 20px;
+  animation: fadeIn 0.4s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------- نوار بالا ---------- */
+.auth-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px 4px;
+}
+
+.auth-back {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--card-b);
+  color: var(--text);
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--sd2);
+  transition: transform 0.2s ease;
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
+.auth-back:active {
+  transform: scale(0.9);
+}
+
+.auth-title {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+/* ---------- لوگو ---------- */
+.auth-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 0;
+  animation: slideInUp 0.5s ease;
+}
+
+.auth-logo-icon {
+  width: 90px;
+  height: 90px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, var(--pr), var(--pr2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  box-shadow: 0 12px 40px rgba(139, 92, 246, 0.35);
+  animation: float 3s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-logo-icon::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 60%);
+  animation: pulse 4s ease-in-out infinite;
+}
+
+.auth-logo-name {
+  font-size: 26px;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--pr), var(--pr2), var(--gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.auth-logo-sub {
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 700;
+}
+
+/* ---------- تب ورود / ثبت‌نام ---------- */
+.auth-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: var(--card);
+  border-radius: 18px;
+  border: 1px solid var(--card-b);
+  box-shadow: var(--sd2);
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: transparent;
+  border: none;
+  color: var(--text2);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.auth-tab:active {
+  transform: scale(0.96);
+}
+
+.auth-tab.active {
+  background: linear-gradient(135deg, var(--pr), var(--pr2));
+  color: white;
+  box-shadow: 0 4px 14px var(--pr-soft);
+}
+
+/* ---------- فرم ---------- */
+.auth-form {
+  background: var(--card);
+  border-radius: 22px;
+  border: 1px solid var(--card-b);
+  box-shadow: var(--sd2);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: slideInUp 0.4s ease;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-field-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--card2);
+  border: 2px solid var(--card-b);
+  border-radius: 14px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  outline: none;
+  transition: border-color 0.2s ease;
+  direction: ltr;
+  text-align: left;
+}
+
+.auth-input:focus {
+  border-color: var(--pr);
+}
+
+.auth-input::placeholder {
+  color: var(--text3);
+  font-weight: 600;
+}
+
+.auth-input.error {
+  border-color: #E84393;
+  animation: shake 0.4s ease;
+}
+
+/* ---------- دکمه‌ها ---------- */
+.auth-submit {
+  padding: 16px;
+  background: linear-gradient(135deg, var(--pr), var(--pr2));
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 24px var(--pr-soft);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.auth-submit:active {
+  transform: scale(0.96);
+}
+
+.auth-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.auth-submit.loading {
+  pointer-events: none;
+}
+
+.auth-submit.loading::after {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-inline-start: 8px;
+}
+
+/* ---------- دکمهٔ مهمان ---------- */
+.auth-guest {
+  padding: 14px;
+  background: transparent;
+  border: 2px dashed var(--card-b);
+  border-radius: 16px;
+  color: var(--text3);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+}
+
+.auth-guest:active {
+  transform: scale(0.97);
+  background: var(--pr-soft);
+  border-color: var(--pr);
+  color: var(--pr);
+}
+
+/* ---------- پیام خطا ---------- */
+.auth-error {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(232, 67, 147, 0.15), rgba(232, 67, 147, 0.25));
+  border: 1px solid rgba(232, 67, 147, 0.3);
+  border-radius: 14px;
+  color: #E84393;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideInDown 0.3s ease;
+}
+
+/* ---------- پیام موفقیت ---------- */
+.auth-success {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(85, 239, 196, 0.15), rgba(0, 184, 148, 0.25));
+  border: 1px solid rgba(0, 184, 148, 0.3);
+  border-radius: 14px;
+  color: #00B894;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideInDown 0.3s ease;
+}
+
+/* ---------- وضعیت ورود (کارت) ---------- */
+.auth-status-card {
+  background: linear-gradient(135deg, var(--card), var(--card2));
+  border: 1px solid var(--card-b);
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: var(--sd2);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  animation: slideInUp 0.4s ease;
+}
+
+.auth-status-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--pr), var(--pr2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+  box-shadow: 0 6px 18px var(--pr-soft);
+}
+
+.auth-status-icon.guest {
+  background: linear-gradient(135deg, #b8b8d0, #a0a0b8);
+}
+
+.auth-status-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-status-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.auth-status-sub {
+  font-size: 12px;
+  color: var(--text3);
+  font-weight: 700;
+  word-break: break-all;
+}
+
+/* ---------- توضیحات ---------- */
+.auth-note {
+  background: var(--card);
+  border: 1px dashed var(--card-b);
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-size: 12px;
+  color: var(--text3);
+  font-weight: 700;
+  line-height: 1.8;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.auth-note .icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ---------- دکمهٔ خروج ---------- */
+.auth-logout-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #E84393, #FD79A8);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(232, 67, 147, 0.3);
+  transition: transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.auth-logout-btn:active {
+  transform: scale(0.96);
+}
+
+/* ---------- موبایل کوچیک ---------- */
+@media (max-width: 380px) {
+  .auth-logo-icon {
+    width: 76px;
+    height: 76px;
+    font-size: 40px;
+  }
+  .auth-logo-name {
+    font-size: 22px;
+  }
+  .auth-input {
+    padding: 12px 14px;
+  }
+  .auth-submit {
+    padding: 14px;
+  }
+  }
