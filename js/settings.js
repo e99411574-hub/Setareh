@@ -20,12 +20,6 @@ var SETTINGS = {
     { id: 'theme_sunset', name: 'غروب',    c1: '#f0a0b8', c2: '#E84393' },
     { id: 'theme_sky',    name: 'آسمان',   c1: '#90c0f0', c2: '#0984E3' },
     { id: 'theme_dark',   name: 'تیره',    c1: '#2d2045', c2: '#a78bfa' }
-    { id: 'theme_spring',   name: 'بهار',     c1: '#FFE0EC', c2: '#FF6B9D' },
-{ id: 'theme_ocean2',   name: 'دریا',     c1: '#D0F0F5', c2: '#00B4D8' },
-{ id: 'theme_forest',   name: 'جنگل',     c1: '#D4E8D4', c2: '#2D6A4F' },
-{ id: 'theme_fire',     name: 'آتش',      c1: '#FFE0B2', c2: '#E63946' },
-{ id: 'theme_neon',     name: 'نئون',     c1: '#2D1B4E', c2: '#B537F2' },
-{ id: 'theme_midnight', name: 'نیمه‌شب',  c1: '#0A1628', c2: '#4A90E2' },
   ],
 
   // ========== بازگشت ==========
