@@ -33,6 +33,7 @@
 <link rel="stylesheet" href="css/qa.css">
 <link rel="stylesheet" href="css/wheel.css">
 <link rel="stylesheet" href="css/missions.css">
+<link rel="stylesheet" href="css/auth.css">
 </head>
 <body data-theme="theme_purple">
 
@@ -69,6 +70,10 @@
       <span class="menu-icon">⚙️</span>
       <span>تنظیمات</span>
     </div>
+    <div class="menu-item" data-go="auth">
+      <span class="menu-icon">🔐</span>
+      <span>ورود / ثبت‌نام</span>
+    </div>
   </div>
   <div class="menu-footer">
     ⭐ ستاره — نسخه ۲.۰
@@ -103,6 +108,10 @@
     <div id="settingsContent"></div>
   </section>
 
+  <section id="view-auth" class="view">
+    <div id="authContent"></div>
+  </section>
+
 </div>
 
 <!-- ============ نوار پایین ============ -->
@@ -133,8 +142,6 @@
 <div id="toast" class="toast"></div>
 
 <!-- ============ اسکریپت‌ها ============ -->
-
-<!-- ۰. کتابخانهٔ Supabase (CDN) -->
 
 <!-- ۱. پایه -->
 <script src="js/i18n.js"></script>
@@ -179,6 +186,7 @@
 <script src="js/shop.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/profile.js"></script>
+<script src="js/auth.js"></script>
 
 <!-- ۹. راه‌اندازی (آخر همه) -->
 <script src="js/app.js"></script>
@@ -217,4 +225,4 @@
 <script>eruda.init();</script>
 
 </body>
-                                                                </html>
+</html>
