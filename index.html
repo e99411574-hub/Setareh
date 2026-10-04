@@ -134,7 +134,7 @@
 
 <!-- ============ اسکریپت‌ها ============ -->
 
-<!-- ۰. کتابخانهٔ Supabase (CDN جایگزین: unpkg) -->
+<!-- ۰. کتابخانهٔ Supabase (CDN) -->
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
 <!-- ۱. پایه -->
@@ -184,7 +184,8 @@
 <!-- ۹. راه‌اندازی (آخر همه) -->
 <script src="js/app.js"></script>
 
-<!-- ============ PWA ============ -->
+<!-- ============ PWA (غیرفعال موقت) ============ -->
+<!--
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
@@ -193,7 +194,11 @@
       });
     });
   }
+</script>
+-->
 
+<script>
+  // showToast fallback
   if (typeof window.showToast !== 'function') {
     window.showToast = function(msg) {
       var el = document.getElementById('toast');
@@ -203,7 +208,7 @@
       clearTimeout(window._toastTimer);
       window._toastTimer = setTimeout(function() {
         el.classList.remove('on');
-      }, 2200);
+      }, 3000);
     };
   }
 </script>
@@ -213,4 +218,4 @@
 <script>eruda.init();</script>
 
 </body>
-</html>
+                                                                </html>
