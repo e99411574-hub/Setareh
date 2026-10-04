@@ -72,6 +72,7 @@ var ROUTER = {
     this.register('shop',     { onEnter: this._enterShop.bind(this) });
     this.register('profile',  { onEnter: this._enterProfile.bind(this) });
     this.register('settings', { onEnter: this._enterSettings.bind(this) });
+    this.register('auth',     { onEnter: this._enterAuth.bind(this) });
 
     window.addEventListener('hashchange', this._onHashChange.bind(this));
     window.addEventListener('popstate', this._onHashChange.bind(this));
@@ -118,7 +119,7 @@ var ROUTER = {
       c.innerHTML = SHOP.render();
       if (typeof SHOP.bindEvents === 'function') SHOP.bindEvents(c);
     }
-    // ثبت رویداد ماموریت — فروشگاه باز شد
+    // ثبت رویداد ماموریت
     if (typeof MISSIONS !== 'undefined') MISSIONS.trackShop();
   },
 
@@ -131,6 +132,10 @@ var ROUTER = {
 
   _enterSettings: function() {
     if (typeof APP !== 'undefined' && APP.renderSettings) APP.renderSettings();
+  },
+
+  _enterAuth: function() {
+    if (typeof AUTH !== 'undefined' && AUTH.start) AUTH.start();
   }
 };
 
