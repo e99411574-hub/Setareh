@@ -176,3 +176,110 @@ body.theme-changing {
 .nav-btn.active .nav-icon {
   filter: drop-shadow(0 4px 10px var(--pr-soft));
 }
+/* ============ 🌸 تم بهار ============ */
+body[data-theme="theme_spring"] {
+  --bg1: #FFE0EC;
+  --bg2: #FFF0F5;
+  --bg3: #E8F8E8;
+  --pr: #FF6B9D;
+  --pr2: #7BC96F;
+  --pr-soft: rgba(255, 107, 157, 0.15);
+  --gold: #FFB347;
+  --gold-soft: rgba(255, 179, 71, 0.2);
+  --text: #4A1F2E;
+  --text2: #7A4A5A;
+  --text3: #A87A88;
+  --card: #FFFFFF;
+  --card2: #FFF5F8;
+  --card-b: rgba(255, 107, 157, 0.1);
+}
+
+/* ============ 🌊 تم اقیانوس ============ */
+body[data-theme="theme_ocean2"] {
+  --bg1: #D0F0F5;
+  --bg2: #E0F7FA;
+  --bg3: #E8F5FF;
+  --pr: #00B4D8;
+  --pr2: #0077B6;
+  --pr-soft: rgba(0, 180, 216, 0.15);
+  --gold: #FFD166;
+  --gold-soft: rgba(255, 209, 102, 0.2);
+  --text: #003049;
+  --text2: #03506B;
+  --text3: #4A7C8E;
+  --card: #FFFFFF;
+  --card2: #F0FAFC;
+  --card-b: rgba(0, 180, 216, 0.1);
+}
+
+/* ============ 🌲 تم جنگل ============ */
+body[data-theme="theme_forest"] {
+  --bg1: #D4E8D4;
+  --bg2: #E8F0E0;
+  --bg3: #F0E8D8;
+  --pr: #2D6A4F;
+  --pr2: #40916C;
+  --pr-soft: rgba(45, 106, 79, 0.15);
+  --gold: #D4A373;
+  --gold-soft: rgba(212, 163, 115, 0.2);
+  --text: #1B4332;
+  --text2: #2D6A4F;
+  --text3: #6B9080;
+  --card: #FFFFFF;
+  --card2: #F5FAF0;
+  --card-b: rgba(45, 106, 79, 0.1);
+}
+
+/* ============ 🔥 تم آتش ============ */
+body[data-theme="theme_fire"] {
+  --bg1: #FFE0B2;
+  --bg2: #FFF0D0;
+  --bg3: #FFE8D0;
+  --pr: #E63946;
+  --pr2: #F77F00;
+  --pr-soft: rgba(230, 57, 70, 0.15);
+  --gold: #FFB703;
+  --gold-soft: rgba(255, 183, 3, 0.2);
+  --text: #4A1010;
+  --text2: #8B2020;
+  --text3: #B85A3A;
+  --card: #FFFFFF;
+  --card2: #FFF5EC;
+  --card-b: rgba(230, 57, 70, 0.1);
+}
+
+/* ============ ⚡ تم نئون ============ */
+body[data-theme="theme_neon"] {
+  --bg1: #1A0B2E;
+  --bg2: #2D1B4E;
+  --bg3: #1F0F35;
+  --pr: #B537F2;
+  --pr2: #39FF14;
+  --pr-soft: rgba(181, 55, 242, 0.25);
+  --gold: #FFEA00;
+  --gold-soft: rgba(255, 234, 0, 0.25);
+  --text: #F0E6FF;
+  --text2: #D0B8F0;
+  --text3: #A088C8;
+  --card: #2D1B4E;
+  --card2: #3D2B5E;
+  --card-b: rgba(181, 55, 242, 0.3);
+}
+
+/* ============ 🌙 تم نیمه‌شب ============ */
+body[data-theme="theme_midnight"] {
+  --bg1: #0A1628;
+  --bg2: #152238;
+  --bg3: #1A2A44;
+  --pr: #4A90E2;
+  --pr2: #8AB6F9;
+  --pr-soft: rgba(74, 144, 226, 0.2);
+  --gold: #E0E6ED;
+  --gold-soft: rgba(224, 230, 237, 0.2);
+  --text: #E8F0F8;
+  --text2: #B0C4DE;
+  --text3: #7A94B4;
+  --card: #1A2A44;
+  --card2: #243654;
+  --card-b: rgba(74, 144, 226, 0.2);
+    }
