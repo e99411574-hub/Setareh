@@ -12,24 +12,22 @@ var APP = {
 
     STATE.init();
 
-    // تست اتصال Supabase (alert برای دیباگ)
+    // تست اتصال Supabase (از طریق Toast)
     setTimeout(function() {
-      var msg = '🔍 وضعیت Supabase:\n';
-      msg += 'SB: ' + (typeof SB !== 'undefined' ? '✅' : '❌') + '\n';
-      msg += 'supabase (global): ' + (typeof supabase !== 'undefined' ? '✅' : '❌') + '\n';
-      msg += 'SB.init: ' + (typeof SB !== 'undefined' && typeof SB.init === 'function' ? '✅' : '❌') + '\n';
-      msg += 'SB.testConnection: ' + (typeof SB !== 'undefined' && typeof SB.testConnection === 'function' ? '✅' : '❌');
+      var msg = 'SB: ' + (typeof SB !== 'undefined' ? '✅' : '❌') + ' | ';
+      msg += 'supabase: ' + (typeof supabase !== 'undefined' ? '✅' : '❌') + ' | ';
+      msg += 'testConn: ' + (typeof SB !== 'undefined' && typeof SB.testConnection === 'function' ? '✅' : '❌');
 
       if (typeof SB !== 'undefined' && SB.testConnection) {
         SB.testConnection().then(function() {
-          alert(msg + '\n\n✅ اتصال موفق!');
+          if (typeof showToast === 'function') showToast(msg + ' | ✅ موفق');
         }).catch(function(err) {
-          alert(msg + '\n\n⚠️ خطا: ' + (err.message || err));
+          if (typeof showToast === 'function') showToast(msg + ' | ⚠️ ' + (err.message || ''));
         });
       } else {
-        alert(msg + '\n\n❌ SB تعریف نشده');
+        if (typeof showToast === 'function') showToast(msg + ' | ❌ SB نیست');
       }
-    }, 4000);
+    }, 3000);
 
     var lang = STATE.get('settings.lang') || 'fa';
     if (typeof setLanguage === 'function') setLanguage(lang);
