@@ -12,28 +12,24 @@ var APP = {
 
     STATE.init();
 
-    // تست اتصال Supabase
-    var self = this;
+    // تست اتصال Supabase (alert برای دیباگ)
     setTimeout(function() {
+      var msg = '🔍 وضعیت Supabase:\n';
+      msg += 'SB: ' + (typeof SB !== 'undefined' ? '✅' : '❌') + '\n';
+      msg += 'supabase (global): ' + (typeof supabase !== 'undefined' ? '✅' : '❌') + '\n';
+      msg += 'SB.init: ' + (typeof SB !== 'undefined' && typeof SB.init === 'function' ? '✅' : '❌') + '\n';
+      msg += 'SB.testConnection: ' + (typeof SB !== 'undefined' && typeof SB.testConnection === 'function' ? '✅' : '❌');
+
       if (typeof SB !== 'undefined' && SB.testConnection) {
         SB.testConnection().then(function() {
-          console.log('✅ Supabase ready');
-          if (typeof showToast === 'function') {
-            showToast('✅ اتصال به سرور برقرار شد');
-          }
+          alert(msg + '\n\n✅ اتصال موفق!');
         }).catch(function(err) {
-          console.warn('⚠️ Supabase test failed:', err);
-          if (typeof showToast === 'function') {
-            showToast('⚠️ اتصال به سرور برقرار نشد');
-          }
+          alert(msg + '\n\n⚠️ خطا: ' + (err.message || err));
         });
       } else {
-        console.warn('⚠️ SB not defined');
-        if (typeof showToast === 'function') {
-          showToast('⚠️ SB تعریف نشده');
-        }
+        alert(msg + '\n\n❌ SB تعریف نشده');
       }
-    }, 3000);
+    }, 4000);
 
     var lang = STATE.get('settings.lang') || 'fa';
     if (typeof setLanguage === 'function') setLanguage(lang);
@@ -148,7 +144,6 @@ var APP = {
     var user = STATE.getUser();
     var html = '<div class="home-page">';
 
-    // ۱. خوش‌آمد
     html += '<div class="welcome-card">';
     html += '<div class="welcome-icon">⭐</div>';
     html += '<div class="welcome-text">';
@@ -157,15 +152,12 @@ var APP = {
     html += '</div>';
     html += '</div>';
 
-    // ۲. شعر روز
     html += this._renderHomePoem();
 
-    // ۳. گردونهٔ شانس
     if (typeof WHEEL !== 'undefined' && WHEEL.renderSection) {
       html += WHEEL.renderSection();
     }
 
-    // ۴. ماموریت‌های روزانه
     if (typeof MISSIONS !== 'undefined' && MISSIONS.render) {
       html += '<div id="missionsContainer">' + MISSIONS.render() + '</div>';
     }
@@ -174,7 +166,6 @@ var APP = {
     c.innerHTML = html;
   },
 
-  // ============ شعر روز ============
   _renderHomePoem: function() {
     var poem = this._getPoemOfDay();
     var html = '<div class="poem-card">';
@@ -218,7 +209,6 @@ var APP = {
     return poems[idx];
   },
 
-  // ============ شروع بازی ============
   startGame: function(gameId) {
     if (typeof playSnd === 'function') playSnd('tap');
     var fn = window['startGame_' + gameId];
@@ -226,7 +216,6 @@ var APP = {
     else if (typeof showToast === 'function') showToast('🎮 ' + t('soon'));
   },
 
-  // ============ باز کردن ابزار ============
   openTool: function(toolId) {
     if (typeof playSnd === 'function') playSnd('tap');
     var fn = window['openTool_' + toolId];
@@ -234,7 +223,6 @@ var APP = {
     else if (typeof showToast === 'function') showToast('🧰 ' + t('soon'));
   },
 
-  // ============ رندر منوی بازی‌ها ============
   renderGamesMenu: function() {
     var c = document.getElementById('gamesContent');
     if (!c) return;
@@ -257,7 +245,6 @@ var APP = {
     c.innerHTML = html;
   },
 
-  // ============ رندر منوی ابزارها ============
   renderToolsMenu: function() {
     var c = document.getElementById('toolsContent');
     if (!c) return;
@@ -279,7 +266,6 @@ var APP = {
     c.innerHTML = html;
   },
 
-  // ============ رندر تنظیمات ============
   renderSettings: function() {
     if (typeof SETTINGS !== 'undefined' && SETTINGS.render) {
       var c = document.getElementById('settingsContent');
