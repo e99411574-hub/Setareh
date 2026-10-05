@@ -1,4 +1,4 @@
-// ===== router.js - مسیریابی بین صفحات ستاره =====
+// ===== router.js — مسیریاب بین صفحات ستاره =====
 
 var ROUTER = {
   routes: {},
@@ -11,7 +11,7 @@ var ROUTER = {
   },
 
   go: function(name, params) {
-    if (!this.routes[name]) { console.warn('ROUTER: not found →', name); return false; }
+    if (!this.routes[name]) { console.warn('ROUTER: not found —', name); return false; }
     if (this.current && this.current !== name) {
       this.hide(this.current);
       this.history.push(this.current);
@@ -73,6 +73,7 @@ var ROUTER = {
     this.register('profile',  { onEnter: this._enterProfile.bind(this) });
     this.register('settings', { onEnter: this._enterSettings.bind(this) });
     this.register('auth',     { onEnter: this._enterAuth.bind(this) });
+    this.register('chat',     { onEnter: this._enterChat.bind(this) });
 
     window.addEventListener('hashchange', this._onHashChange.bind(this));
     window.addEventListener('popstate', this._onHashChange.bind(this));
@@ -100,7 +101,7 @@ var ROUTER = {
     }
   },
 
-  // ========== ورود به صفحات ==========
+  // ============ توابع ورود به صفحات ============
   _enterHome: function() {
     if (typeof APP !== 'undefined' && APP.renderHome) APP.renderHome();
   },
@@ -119,7 +120,6 @@ var ROUTER = {
       c.innerHTML = SHOP.render();
       if (typeof SHOP.bindEvents === 'function') SHOP.bindEvents(c);
     }
-    // ثبت رویداد ماموریت
     if (typeof MISSIONS !== 'undefined') MISSIONS.trackShop();
   },
 
@@ -136,6 +136,12 @@ var ROUTER = {
 
   _enterAuth: function() {
     if (typeof AUTH !== 'undefined' && AUTH.start) AUTH.start();
+  },
+
+  _enterChat: function() {
+    if (typeof CHAT !== 'undefined' && CHAT.render) {
+      CHAT.render();
+    }
   }
 };
 
