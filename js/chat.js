@@ -500,7 +500,7 @@ const CHAT = (() => {
   }
 
   function renderMessage(msg, myId) {
-    const isMe = msg.sender_i    const isMe = msg.sender_id === myId;
+    const isMe = msg.sender_id === myId;
     const cls = isMe ? 'chat-msg-me' : 'chat-msg-other';
     const time = formatTime(msg.created_at);
     if (msg.type === 'image' && msg.media_url) {
