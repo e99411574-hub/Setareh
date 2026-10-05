@@ -1,4 +1,4 @@
-// ===== js/auth.js — نسخهٔ فعال (ورود/ثبت‌نام Supabase) =====
+// ===== js/auth.js — ورود/ثبت‌نام + نام کاربری =====
 
 const AUTH = (() => {
 
@@ -20,12 +20,8 @@ const AUTH = (() => {
   // ============ ثبت‌نام ============
   async function signup(email, password, displayName) {
     try {
-      if (!email || !password) {
-        throw new Error('ایمیل و رمز رو وارد کن');
-      }
-      if (password.length < 6) {
-        throw new Error('رمز باید حداقل ۶ کاراکتر باشه');
-      }
+      if (!email || !password) throw new Error('ایمیل و رمز رو وارد کن');
+      if (password.length < 6) throw new Error('رمز باید حداقل ۶ کاراکتر باشه');
 
       showMsg('⏳ در حال ثبت‌نام...', false);
 
@@ -57,9 +53,7 @@ const AUTH = (() => {
   // ============ ورود ============
   async function login(email, password) {
     try {
-      if (!email || !password) {
-        throw new Error('ایمیل و رمز رو وارد کن');
-      }
+      if (!email || !password) throw new Error('ایمیل و رمز رو وارد کن');
 
       showMsg('⏳ در حال ورود...', false);
 
@@ -82,7 +76,6 @@ const AUTH = (() => {
         await SB.signOut();
       }
       showMsg('👋 از حساب خارج شدی', false);
-
       if (typeof PROFILE !== 'undefined' && PROFILE.refresh) {
         PROFILE.refresh();
       }
@@ -98,12 +91,8 @@ const AUTH = (() => {
     if (typeof SB !== 'undefined' && SB._saveSession) {
       SB._saveSession();
     }
-
-    // sync کاربر با جدول public.users
     await syncUser(displayName);
-
     updateUserUI();
-
     if (typeof PROFILE !== 'undefined' && PROFILE.refresh) {
       setTimeout(() => PROFILE.refresh(), 300);
     }
@@ -115,9 +104,8 @@ const AUTH = (() => {
       const user = getUser();
       if (!user || !user.id) return;
 
-      // چک کن کاربر هست یا نه (بدون single)
       const result = await SB.from('users')
-        .select('id')
+        .select('id, username')
         .eq('id', user.id);
 
       const existing = result && result.data && result.data[0];
@@ -127,6 +115,15 @@ const AUTH = (() => {
         await SB.update('users', {
           last_seen: new Date().toISOString()
         }, { id: user.id });
+
+        // اگه username نداره، بساز
+        if (!existing.username) {
+          const uname = await generateUniqueUsername();
+          if (uname) {
+            await SB.update('users', { username: uname }, { id: user.id });
+            console.log('✅ username ساخته شد:', uname);
+          }
+        }
         console.log('✅ کاربر قبلاً بود، آپدیت شد');
       } else {
         // کاربر جدید → درج
@@ -134,20 +131,84 @@ const AUTH = (() => {
           || (user.user_metadata && user.user_metadata.display_name)
           || user.email.split('@')[0];
 
+        const uname = await generateUniqueUsername();
+
         await SB.insert('users', {
           id: user.id,
           email: user.email,
           display_name: name,
+          username: uname,
           avatar: 'male',
           coins: 100,
           gems: 0,
           level: 1,
           streak_days: 0
         });
-        console.log('✅ کاربر جدید درج شد:', name);
+        console.log('✅ کاربر جدید درج شد:', name, '— username:', uname);
       }
     } catch (err) {
       console.warn('⚠️ syncUser error:', err.message);
+    }
+  }
+
+  // ============ تولید username عددی یکتا (۷ رقم) ============
+  async function generateUniqueUsername() {
+    for (let i = 0; i < 10; i++) {
+      const num = Math.floor(1000000 + Math.random() * 9000000);
+      const uname = String(num);
+
+      const res = await SB.from('users').select('id').eq('username', uname);
+      if (!res.data || !res.data.length) {
+        return uname;
+      }
+    }
+    return String(Date.now()).slice(-7);
+  }
+
+  // ============ تغییر username ============
+  async function updateUsername(newUsername) {
+    try {
+      const me = getUser();
+      if (!me || !me.id) throw new Error('وارد نشدی');
+
+      const uname = (newUsername || '').trim();
+      if (uname.length < 4) throw new Error('حداقل ۴ کاراکتر');
+      if (uname.length > 20) throw new Error('حداکثر ۲۰ کاراکتر');
+      if (!/^[a-zA-Z0-9_]+$/.test(uname)) {
+        throw new Error('فقط حرف، عدد و _');
+      }
+
+      // چک ادمین
+      const userData = await SB.from('users').select('*').eq('id', me.id);
+      const meData = userData && userData.data && userData.data[0];
+      const isAdmin = meData && meData.is_admin;
+
+      // چک رزرو (فقط ادمین بتونه از رزروها استفاده کنه)
+      if (!isAdmin) {
+        const reservedRes = await SB.from('reserved_usernames').select('*');
+        const reserved = (reservedRes.data || []).map(r => r.username.toLowerCase());
+        if (reserved.includes(uname.toLowerCase())) {
+          throw new Error('این نام کاربری رزرو شده');
+        }
+      }
+
+      // چک یکتا بودن
+      const existing = await SB.from('users')
+        .select('id')
+        .eq('username', uname);
+
+      if (existing.data && existing.data.length) {
+        const other = existing.data.find(u => u.id !== me.id);
+        if (other) throw new Error('این نام کاربری قبلاً گرفته شده');
+      }
+
+      // ذخیره
+      await SB.update('users', { username: uname }, { id: me.id });
+      console.log('✅ username به‌روز شد:', uname);
+      return { ok: true, username: uname };
+    } catch (err) {
+      console.warn('updateUsername error:', err);
+      return { ok: false, error: err.message };
     }
   }
 
@@ -155,7 +216,6 @@ const AUTH = (() => {
   function updateUserUI() {
     const user = getUser();
     const nameEl = document.getElementById('hdrName');
-
     if (user && nameEl) {
       const name = (user.user_metadata && user.user_metadata.display_name)
         || user.email.split('@')[0];
@@ -238,12 +298,8 @@ const AUTH = (() => {
             برای ذخیرهٔ آنلاین، چت و دوستی وارد شو
           </div>
           <div style="display:flex;gap:10px;margin-top:16px;justify-content:center;">
-            <button onclick="AUTH.showForm('login')" style="flex:1;background:#fff;color:#6C5CE7;border:none;padding:10px;border-radius:12px;font-family:inherit;font-weight:bold;font-size:14px;cursor:pointer;">
-              ورود
-            </button>
-            <button onclick="AUTH.showForm('signup')" style="flex:1;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:10px;border-radius:12px;font-family:inherit;font-weight:bold;font-size:14px;cursor:pointer;">
-              ثبت‌نام
-            </button>
+            <button onclick="AUTH.showForm('login')" style="flex:1;background:#fff;color:#6C5CE7;border:none;padding:10px;border-radius:12px;font-family:inherit;font-weight:bold;font-size:14px;cursor:pointer;">ورود</button>
+            <button onclick="AUTH.showForm('signup')" style="flex:1;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:10px;border-radius:12px;font-family:inherit;font-weight:bold;font-size:14px;cursor:pointer;">ثبت‌نام</button>
           </div>
         </div>
       `;
@@ -270,9 +326,7 @@ const AUTH = (() => {
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:12px;">
-          ${isSignup ? `
-          <input id="authName" type="text" placeholder="نام نمایشی (اختیاری)" style="padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-family:inherit;font-size:14px;text-align:center;">
-          ` : ''}
+          ${isSignup ? `<input id="authName" type="text" placeholder="نام نمایشی (اختیاری)" style="padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-family:inherit;font-size:14px;text-align:center;">` : ''}
           <input id="authEmail" type="email" placeholder="ایمیل" dir="ltr" style="padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-family:inherit;font-size:14px;text-align:center;">
           <input id="authPassword" type="password" placeholder="رمز (حداقل ۶ کاراکتر)" dir="ltr" style="padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-family:inherit;font-size:14px;text-align:center;">
           <button id="authSubmit" onclick="AUTH.${isSignup ? 'submitSignup' : 'submitLogin'}()" style="background:linear-gradient(135deg,#6C5CE7,#0984E3);color:#fff;border:none;padding:14px;border-radius:12px;font-family:inherit;font-weight:bold;font-size:15px;cursor:pointer;box-shadow:0 4px 15px rgba(108,92,231,.4);">
@@ -344,12 +398,10 @@ const AUTH = (() => {
     if (typeof SB !== 'undefined' && SB.init) {
       SB.init();
     }
-
     if (isLoggedIn()) {
       await syncUser();
       updateUserUI();
     }
-
     console.log('✅ AUTH: فعال شد — ' + (isLoggedIn() ? 'کاربر وارد شده' : 'مهمان'));
   }
 
@@ -358,7 +410,7 @@ const AUTH = (() => {
     isLoggedIn, getUser, getSession,
     renderStatusCard, showForm, closeForm,
     submitSignup, submitLogin,
-    syncUser
+    syncUser, updateUsername, generateUniqueUsername
   };
 })();
 
