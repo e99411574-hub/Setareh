@@ -1,111 +1,335 @@
-// ================================
-// js/auth.js — موقتاً غیرفعال
-// ورود/ثبت‌نام بزودی فعال میشه
-// ================================
+// ===== js/auth.js — نسخهٔ فعال (ورود/ثبت‌نام Supabase) =====
 
 const AUTH = (() => {
 
-  function isLoggedIn() { return false; }
-  function getUser() { return null; }
-  function getSession() { return null; }
-
-  async function signup() {
-    showMsg('🚧 ورود و ثبت‌نام بزودی فعال میشه!', true);
-    return { ok: false };
+  // ============ وضعیت ============
+  function isLoggedIn() {
+    return typeof SB !== 'undefined' && SB.isLoggedIn && SB.isLoggedIn();
   }
 
-  async function login() {
-    showMsg('🚧 ورود و ثبت‌نام بزودی فعال میشه!', true);
-    return { ok: false };
+  function getUser() {
+    if (typeof SB === 'undefined') return null;
+    return SB.getUser ? SB.getUser() : null;
   }
 
+  function getSession() {
+    if (typeof SB === 'undefined') return null;
+    return SB.getSession ? SB.getSession() : null;
+  }
+
+  // ============ ثبت‌نام ============
+  async function signup(email, password, displayName) {
+    try {
+      if (!email || !password) {
+        throw new Error('ایمیل و رمز رو وارد کن');
+      }
+      if (password.length < 6) {
+        throw new Error('رمز باید حداقل ۶ کاراکتر باشه');
+      }
+
+      showMsg('⏳ در حال ثبت‌نام...', false);
+
+      const data = await SB.signUp(email, password, {
+        display_name: displayName || email.split('@')[0]
+      });
+
+      // اگه توی پاسخ access_token داشت → وارد شده
+      if (data && data.access_token) {
+        await onLoginSuccess(data);
+        showMsg('✅ ثبت‌نام موفق! خوش آمدی 🌟', false);
+        return { ok: true, user: data.user };
+      }
+
+      // اگه نیاز به تأیید ایمیل داشت
+      if (data && data.user && !data.access_token) {
+        showMsg('📧 لینک تأیید به ایمیلت فرستادیم', false);
+        return { ok: true, needsConfirm: true };
+      }
+
+      showMsg('✅ ثبت‌نام انجام شد', false);
+      return { ok: true };
+
+    } catch (err) {
+      const msg = translateError(err.message);
+      showMsg('❌ ' + msg, true);
+      return { ok: false, error: msg };
+    }
+  }
+
+  // ============ ورود ============
+  async function login(email, password) {
+    try {
+      if (!email || !password) {
+        throw new Error('ایمیل و رمز رو وارد کن');
+      }
+
+      showMsg('⏳ در حال ورود...', false);
+
+      const data = await SB.signIn(email, password);
+      await onLoginSuccess(data);
+      showMsg('✅ خوش آمدی! 🌟', false);
+      return { ok: true, user: data.user };
+
+    } catch (err) {
+      const msg = translateError(err.message);
+      showMsg('❌ ' + msg, true);
+      return { ok: false, error: msg };
+    }
+  }
+
+  // ============ خروج ============
   async function logout() {
-    return { ok: true };
+    try {
+      if (typeof SB !== 'undefined' && SB.signOut) {
+        await SB.signOut();
+      }
+      showMsg('👋 از حساب خارج شدی', false);
+
+      // رفرش پروفایل
+      if (typeof PROFILE !== 'undefined' && PROFILE.render) {
+        PROFILE.render();
+      }
+      return { ok: true };
+    } catch (err) {
+      showMsg('❌ خطا در خروج', true);
+      return { ok: false };
+    }
   }
 
+  // ============ بعد از ورود موفق ============
+  async function onLoginSuccess(data) {
+    // ذخیره سشن
+    if (typeof SB !== 'undefined' && SB._saveSession) {
+      SB._saveSession();
+    }
+
+    // آپدیت UI
+    updateUserUI();
+
+    // رفرش پروفایل اگه بازه
+    if (typeof PROFILE !== 'undefined' && PROFILE.render) {
+      setTimeout(() => PROFILE.render(), 300);
+    }
+  }
+
+  // ============ آپدیت UI پس از ورود/خروج ============
+  function updateUserUI() {
+    const user = getUser();
+    const nameEl = document.getElementById('hdrName');
+    const avatarEl = document.getElementById('menuAvatar');
+
+    if (user && nameEl) {
+      const name = (user.user_metadata && user.user_metadata.display_name)
+        || user.email.split('@')[0];
+      nameEl.textContent = name;
+    }
+  }
+
+  // ============ ترجمهٔ خطاهای Supabase ============
+  function translateError(msg) {
+    if (!msg) return 'خطای ناشناخته';
+    const m = msg.toLowerCase();
+
+    if (m.includes('already registered') || m.includes('already exists')) {
+      return 'این ایمیل قبلاً ثبت شده — وارد شو';
+    }
+    if (m.includes('invalid login') || m.includes('invalid credentials')) {
+      return 'ایمیل یا رمز اشتباهه';
+    }
+    if (m.includes('email not confirmed')) {
+      return 'ایمیل تأیید نشده — برو ایمیلت رو چک کن';
+    }
+    if (m.includes('password') && m.includes('short')) {
+      return 'رمز خیلی کوتاهه (حداقل ۶ کاراکتر)';
+    }
+    if (m.includes('rate limit')) {
+      return 'زیادی تلاش کردی — چند دقیقه صبر کن';
+    }
+    if (m.includes('network') || m.includes('fetch')) {
+      return 'اتصال اینترنت رو چک کن';
+    }
+    if (m.includes('signup') && m.includes('disabled')) {
+      return 'ثبت‌نام غیرفعاله';
+    }
+    return msg;
+  }
+
+  // ============ نمایش پیام ============
   function showMsg(text, isError) {
-    const el = document.getElementById('authMsg');
-    if (!el) return;
+    let el = document.getElementById('authMsg');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'authMsg';
+      el.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);' +
+        'padding:12px 20px;border-radius:12px;font-weight:bold;z-index:9999;' +
+        'box-shadow:0 4px 20px rgba(0,0,0,0.2);display:none;max-width:90%;text-align:center;';
+      document.body.appendChild(el);
+    }
     el.textContent = text;
-    el.style.background = isError ? '#ffa502' : '#00b894';
+    el.style.background = isError ? '#e74c3c' : '#00b894';
     el.style.color = '#fff';
     el.style.display = 'block';
-    setTimeout(() => { el.style.display = 'none'; }, 4000);
+    clearTimeout(window._authMsgTimer);
+    window._authMsgTimer = setTimeout(() => { el.style.display = 'none'; }, 4000);
   }
 
-  // ---- مخفی کردن دکمه‌ها ----
-  function hideAuthButtons() {
-    let count = 0;
-    document.querySelectorAll('*').forEach(el => {
-      if (el.children.length === 0) {
-        const t = (el.textContent || '').trim();
-        // هر عنصری که «ورود» و «ثبت» رو با هم داره
-        if (t.includes('ورود') && t.includes('ثبت')) {
-          const parent = el.closest('.menu-item, .sidebar-item, li, a, button') || el.parentElement;
-          if (parent) {
-            parent.style.display = 'none';
-            count++;
-          }
-        }
-      }
-    });
-    console.log('🚫 دکمه‌های ورود/ثبت‌نام مخفی شدند:', count);
-  }
+  // ============ رندر کارت وضعیت (برای پروفایل) ============
+  function renderStatusCard() {
+    const card = document.getElementById('userStatusCard');
+    if (!card) return;
 
-  // ---- راه‌اندازی ----
-  function init() {
-    console.log('🚧 AUTH: غیرفعال (بزودی فعال میشه)');
+    if (isLoggedIn()) {
+      const user = getUser();
+      const email = user ? user.email : '';
+      const name = (user && user.user_metadata && user.user_metadata.display_name)
+        || (email ? email.split('@')[0] : 'کاربر');
 
-    // مخفی کردن دکمه‌های ورود
-    hideAuthButtons();
-
-    // هر ۱ ثانیه چک کن (اگه منو دوباره باز شد)
-    setInterval(hideAuthButtons, 1000);
-
-    // پاک کردن سشن قدیمی
-    try {
-      localStorage.removeItem('setareh_session');
-      localStorage.removeItem('setareh_user');
-      console.log('🧹 سشن قدیمی پاک شد');
-    } catch(e) {}
-
-    // کارت پروفایل
-    const statusCard = document.getElementById('userStatusCard');
-    if (statusCard) {
-      statusCard.innerHTML = `
-        <div style="padding:24px;text-align:center;color:#636e72;">
-          <div style="font-size:48px;margin-bottom:12px;">🚧</div>
-          <div style="font-weight:bold;">ورود و ثبت‌نام</div>
-          <div style="font-size:13px;margin-top:8px;opacity:.7;">بزودی فعال میشه!</div>
+      card.innerHTML = `
+        <div style="background:linear-gradient(135deg,#00b894,#00cec9);border-radius:16px;padding:18px;color:#fff;text-align:center;box-shadow:0 4px 20px rgba(0,184,148,.3);margin-bottom:16px;">
+          <div style="font-size:32px;margin-bottom:6px;">✅</div>
+          <div style="font-weight:bold;font-size:16px;">وارد شدی، ${escapeHtml(name)}!</div>
+          <div style="font-size:12px;margin-top:6px;opacity:.9;">📧 ${escapeHtml(email)}</div>
+          <button onclick="AUTH.logout()" style="margin-top:14px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:8px 20px;border-radius:20px;font-family:inherit;font-size:13px;cursor:pointer;">
+            خروج از حساب
+          </button>
+        </div>
+      `;
+    } else {
+      card.innerHTML = `
+        <div style="background:linear-gradient(135deg,#6C5CE7,#0984E3);border-radius:16px;padding:20px;color:#fff;text-align:center;box-shadow:0 4px 20px rgba(108,92,231,.3);margin-bottom:16px;">
+          <div style="font-size:32px;margin-bottom:8px;">👤</div>
+          <div style="font-weight:bold;font-size:15px;">مهمان عزیز</div>
+          <div style="font-size:12px;margin-top:6px;opacity:.85;line-height:1.5;">
+            برای ذخیرهٔ آنلاین، چت و دوستی وارد شو
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px;justify-content:center;">
+            <button onclick="AUTH.showForm('login')" style="flex:1;background:#fff;color:#6C5CE7;border:none;padding:10px;border-radius:12px;font-family:inherit;font-weight:bold;font-size:14px;cursor:pointer;">
+              ورود
+            </button>
+            <button onclick="AUTH.showForm('signup')" style="flex:1;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:10px;border-radius:12px;font-family:inherit;font-weight:bold;font-size:14px;cursor:pointer;">
+              ثبت‌نام
+            </button>
+          </div>
         </div>
       `;
     }
   }
 
-  function renderStatusCard() { /* غیرفعال */ }
+  // ============ نمایش فرم ورود/ثبت‌نام ============
+  function showForm(mode) {
+    const isSignup = mode === 'signup';
+    const overlay = document.createElement('div');
+    overlay.id = 'authOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);' +
+      'display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;';
+
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:20px;padding:24px;width:100%;max-width:380px;position:relative;animation:authPop .3s ease;">
+        <button onclick="AUTH.closeForm()" style="position:absolute;top:12px;left:12px;background:#f0f0f5;border:none;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;">✕</button>
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="font-size:40px;">⭐</div>
+          <div style="font-weight:bold;font-size:18px;color:#2d3436;margin-top:6px;">
+            ${isSignup ? 'ثبت‌نام در ستاره' : 'ورود به ستاره'}
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          ${isSignup ? `
+          <input id="authName" type="text" placeholder="نام نمایشی (اختیاری)" style="padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-family:inherit;font-size:14px;text-align:center;">
+          ` : ''}
+          <input id="authEmail" type="email" placeholder="ایمیل" dir="ltr" style="padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-family:inherit;font-size:14px;text-align:center;">
+          <input id="authPassword" type="password" placeholder="رمز (حداقل ۶ کاراکتر)" dir="ltr" style="padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-family:inherit;font-size:14px;text-align:center;">
+          <button id="authSubmit" onclick="AUTH.${isSignup ? 'submitSignup' : 'submitLogin'}()" style="background:linear-gradient(135deg,#6C5CE7,#0984E3);color:#fff;border:none;padding:14px;border-radius:12px;font-family:inherit;font-weight:bold;font-size:15px;cursor:pointer;box-shadow:0 4px 15px rgba(108,92,231,.4);">
+            ${isSignup ? 'ثبت‌نام' : 'ورود'}
+          </button>
+          <div style="text-align:center;font-size:13px;color:#636e72;margin-top:6px;">
+            ${isSignup ? 'حساب داری؟' : 'حساب نداری؟'}
+            <a onclick="AUTH.showForm('${isSignup ? 'login' : 'signup'}')" style="color:#6C5CE7;font-weight:bold;cursor:pointer;">
+              ${isSignup ? 'وارد شو' : 'ثبت‌نام کن'}
+            </a>
+          </div>
+        </div>
+      </div>
+      <style>
+        @keyframes authPop {
+          from { transform: scale(.9); opacity: 0; }
+          to   { transform: scale(1); opacity: 1; }
+        }
+      </style>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Enter برای submit
+    setTimeout(() => {
+      const passEl = document.getElementById('authPassword');
+      if (passEl) {
+        passEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            isSignup ? submitSignup() : submitLogin();
+          }
+        });
+      }
+    }, 100);
+  }
+
+  function closeForm() {
+    const el = document.getElementById('authOverlay');
+    if (el) el.remove();
+  }
+
+  // ============ Submit فرم ============
+  async function submitSignup() {
+    const email = (document.getElementById('authEmail') || {}).value || '';
+    const password = (document.getElementById('authPassword') || {}).value || '';
+    const name = (document.getElementById('authName') || {}).value || '';
+
+    const res = await signup(email.trim(), password, name.trim());
+    if (res.ok) {
+      closeForm();
+      renderStatusCard();
+    }
+  }
+
+  async function submitLogin() {
+    const email = (document.getElementById('authEmail') || {}).value || '';
+    const password = (document.getElementById('authPassword') || {}).value || '';
+
+    const res = await login(email.trim(), password);
+    if (res.ok) {
+      closeForm();
+      renderStatusCard();
+    }
+  }
+
+  // ============ escape HTML ============
+  function escapeHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    })[c]);
+  }
+
+  // ============ init ============
+  function init() {
+    // راه‌اندازی SB (بارگذاری سشن)
+    if (typeof SB !== 'undefined' && SB.init) {
+      SB.init();
+    }
+
+    // اگه کاربر لاگین بود، UI رو آپدیت کن
+    if (isLoggedIn()) {
+      updateUserUI();
+    }
+
+    console.log('✅ AUTH: فعال شد — ' + (isLoggedIn() ? 'کاربر وارد شده' : 'مهمان'));
+  }
 
   return {
     init, signup, login, logout,
     isLoggedIn, getUser, getSession,
-    renderStatusCard, showMsg
+    renderStatusCard, showForm, closeForm,
+    submitSignup, submitLogin
   };
 })();
 
-// ⚡ راه‌اندازی خودکار
-(function autoStart(){
-  const start = () => {
-    if (typeof AUTH !== 'undefined' && AUTH.init) {
-      AUTH.init();
-      console.log('✅ AUTH.init خودکار اجرا شد');
-    }
-  };
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(start, 300));
-  } else {
-    setTimeout(start, 300);
-  }
-  // چک دوباره بعد از ۲ ثانیه
-  setTimeout(start, 2000);
-})();
-
-console.log('🚧 AUTH: حالت غیرفعال لود شد');
+console.log('🔐 AUTH: آماده');
