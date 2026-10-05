@@ -1,5 +1,13 @@
 // ===== js/profile.js — صفحهٔ پروفایل =====
 
+// ===== تابع کمکی escapeHtml =====
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+  });
+}
+
 var PROFILE = {
   _avatarMode: false,
   _tickMode: false,
@@ -7,7 +15,6 @@ var PROFILE = {
   _bioMode: false,
   _usernameMode: false,
 
-  // ============ رفتن به تنظیمات ============
   goSettings: function() {
     ROUTER.go('settings');
   },
@@ -207,7 +214,6 @@ var PROFILE = {
 
     var html = '<div class="profile-page">';
 
-    // کارت ورود/ثبت‌نام
     html += '<div id="userStatusCard"></div>';
 
     // هدر
@@ -304,7 +310,6 @@ var PROFILE = {
     // اطلاعات
     html += '<div class="profile-list">';
 
-    // نام کاربری
     if (sbUser) {
       html += '<div class="profile-item" onclick="PROFILE.editUsername()">';
       html += '<span class="item-icon">🆔</span>';
@@ -348,14 +353,6 @@ var PROFILE = {
 
     html += '</div>';
     return html;
-  },
-
-  // ============ escape ============
-  escapeHtml: function(s) {
-    if (!s) return '';
-    return String(s).replace(/[&<>"']/g, function(c) {
-      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
-    });
   },
 
   // ============ لود دادهٔ کاربر از Supabase ============
@@ -411,4 +408,4 @@ var PROFILE = {
 // ============ راه‌اندازی خودکار ============
 if (typeof window !== 'undefined') {
   window.PROFILE = PROFILE;
-      }
+  }
