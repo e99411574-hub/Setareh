@@ -1,4 +1,4 @@
-// ===== profile.js - صفحهٔ پروفایل ستاره =====
+// ===== js/profile.js — صفحهٔ پروفایل =====
 
 var PROFILE = {
   _avatarMode: false,
@@ -6,12 +6,12 @@ var PROFILE = {
   _nameMode: false,
   _bioMode: false,
 
-  // ========== رفتن به تنظیمات ==========
+  // ============ رفتن به تنظیمات ============
   goSettings: function() {
     ROUTER.go('settings');
   },
 
-  // ========== نام ==========
+  // ============ ویرایش نام ============
   editName: function() {
     this._nameMode = true;
     this._bioMode = false;
@@ -21,10 +21,12 @@ var PROFILE = {
       if (i) i.focus();
     }, 100);
   },
+
   cancelName: function() {
     this._nameMode = false;
     this.refresh();
   },
+
   saveName: function() {
     var input = document.getElementById('pNameInput');
     if (!input) return;
@@ -44,7 +46,7 @@ var PROFILE = {
     if (typeof APP !== 'undefined' && APP.updateHeader) APP.updateHeader();
   },
 
-  // ========== بیو ==========
+  // ============ ویرایش بیو ============
   editBio: function() {
     this._bioMode = true;
     this._nameMode = false;
@@ -54,10 +56,12 @@ var PROFILE = {
       if (i) i.focus();
     }, 100);
   },
+
   cancelBio: function() {
     this._bioMode = false;
     this.refresh();
   },
+
   saveBio: function() {
     var input = document.getElementById('pBioInput');
     if (!input) return;
@@ -72,13 +76,14 @@ var PROFILE = {
     if (typeof showToast === 'function') showToast('✅ ' + t('bioSaved'));
   },
 
-  // ========== آواتار ==========
+  // ============ انتخاب آواتار ============
   toggleAvatarMode: function() {
     this._avatarMode = !this._avatarMode;
     this._tickMode = false;
     if (typeof playSnd === 'function') playSnd('tap');
     this.refresh();
   },
+
   setAvatar: function(type) {
     var u = SHOP.getUser();
     if (type === 'male' || type === 'female') {
@@ -89,6 +94,7 @@ var PROFILE = {
       if (typeof playSnd === 'function') playSnd('click');
     }
   },
+
   uploadImage: function(evt) {
     var file = evt.target.files[0];
     if (!file) return;
@@ -111,13 +117,14 @@ var PROFILE = {
     reader.readAsDataURL(file);
   },
 
-  // ========== تیک ==========
+  // ============ انتخاب تیک ============
   toggleTickMode: function() {
     this._tickMode = !this._tickMode;
     this._avatarMode = false;
     if (typeof playSnd === 'function') playSnd('tap');
     this.refresh();
   },
+
   setTick: function(tickId) {
     var u = SHOP.getUser();
     if ((u.ownedTicks || []).indexOf(tickId) < 0) {
@@ -131,7 +138,7 @@ var PROFILE = {
     if (typeof playSnd === 'function') playSnd('click');
   },
 
-  // ========== آواتار رندر ==========
+  // ============ رندر آواتار ============
   renderAvatar: function(u) {
     if (u.avatar === 'custom' && u.avatarImage) {
       return '<img src="' + u.avatarImage + '" alt="avatar">';
@@ -140,12 +147,15 @@ var PROFILE = {
     return '👨';
   },
 
-  // ========== رندر ==========
+  // ============ رندر اصلی ============
   render: function() {
     var u = SHOP.getUser();
     var html = '<div class="profile-page">';
 
-    // کارت هیرو
+    // 👇 کارت ورود/ثبت‌نام
+    html += '<div id="userStatusCard"></div>';
+
+    // هدر
     html += '<div class="profile-hero">';
     html += '<div class="hero-avatar">' + this.renderAvatar(u) + '</div>';
     html += '<div class="hero-info">';
@@ -165,7 +175,7 @@ var PROFILE = {
     html += '<div class="quick-label">' + t('editBio') + '</div>';
     html += '</div>';
     html += '<div class="quick-item" onclick="PROFILE.toggleAvatarMode()">';
-    html += '<div class="quick-icon">👤</div>';
+    html += '<div class="quick-icon">🎨</div>';
     html += '<div class="quick-label">' + t('chooseAvatar') + '</div>';
     html += '</div>';
     html += '</div>';
@@ -188,37 +198,37 @@ var PROFILE = {
       html += '</div></div>';
     }
 
-    // پیکر آواتار
+    // انتخاب آواتار
     if (this._avatarMode) {
       html += '<div class="profile-list"><div class="avatar-picker">';
       html += '<div class="avatar-opt ' + (u.avatar === 'male' ? 'active' : '') + '" onclick="PROFILE.setAvatar(\'male\')">👨</div>';
       html += '<div class="avatar-opt ' + (u.avatar === 'female' ? 'active' : '') + '" onclick="PROFILE.setAvatar(\'female\')">👩</div>';
-      html += '<label class="avatar-opt ' + (u.avatar === 'custom' ? 'active' : '') + '">🖼️';
+      html += '<label class="avatar-opt ' + (u.avatar === 'custom' ? 'active' : '') + '">📷';
       html += '<input type="file" accept="image/*" style="display:none" onchange="PROFILE.uploadImage(event)">';
       html += '</label>';
       html += '</div></div>';
     }
 
-    // پیکر تیک
+    // انتخاب تیک
     if (this._tickMode) {
       html += '<div class="profile-list"><div class="tick-picker">';
       var ticks = u.ownedTicks || ['star_black'];
       for (var i = 0; i < ticks.length; i++) {
         var tid = ticks[i];
-        var active = (u.selectedTick === tid) ? 'active' : '';
-        html += '<div class="tick-opt ' + active + '" onclick="PROFILE.setTick(\'' + tid + '\')">';
-        html += (typeof renderTick === 'function') ? renderTick(tid, 40) : '✓';
+        var active = (u.selectedTick === tid) ? ' active' : '';
+        html += '<div class="tick-opt' + active + '" onclick="PROFILE.setTick(\'' + tid + '\')">';
+        html += (typeof renderTick === 'function') ? renderTick(tid, 40) : '⭐';
         html += '</div>';
       }
       html += '</div></div>';
     }
 
-    // لیست اطلاعات
+    // اطلاعات
     html += '<div class="profile-list">';
     html += '<div class="profile-item" onclick="PROFILE.toggleTickMode()">';
-    html += '<span class="item-icon">✓</span>';
+    html += '<span class="item-icon">⭐</span>';
     html += '<span class="item-text">' + t('chooseTick') + '</span>';
-    html += '<span class="item-value">' + (t(u.selectedTick) || '') + '</span>';
+    html += '<span class="item-value">' + (u.selectedTick || '⭐') + '</span>';
     html += '<span class="item-chevron">‹</span>';
     html += '</div>';
     html += '<div class="profile-item" onclick="ROUTER.go(\'shop\')">';
@@ -229,7 +239,7 @@ var PROFILE = {
     html += '</div>';
     html += '<div class="profile-item" onclick="ROUTER.go(\'shop\')">';
     html += '<span class="item-icon">💎</span>';
-    html += '<span class="item-text">جم</span>';
+    html += '<span class="item-text">' + t('gems') + '</span>';
     html += '<span class="item-value">' + fmtNum(u.gems || 0) + '</span>';
     html += '<span class="item-chevron">‹</span>';
     html += '</div>';
@@ -251,6 +261,7 @@ var PROFILE = {
     return html;
   },
 
+  // ============ رفرش ============
   refresh: function() {
     var c = document.getElementById('profileContent');
     if (c) {
@@ -259,9 +270,16 @@ var PROFILE = {
       void c.offsetWidth;
       c.classList.add('anim-fade-in');
     }
+
+    // 👇 کارت ورود/ثبت‌نام
+    if (typeof AUTH !== 'undefined' && AUTH.renderStatusCard) {
+      setTimeout(function() { AUTH.renderStatusCard(); }, 50);
+    }
+
     if (typeof APP !== 'undefined' && APP.updateHeader) APP.updateHeader();
   },
 
+  // ============ init ============
   init: function() {
     var u = SHOP.getUser();
     if (!u.ownedTicks) u.ownedTicks = ['star_black'];
@@ -272,4 +290,7 @@ var PROFILE = {
   }
 };
 
-window.PROFILE = PROFILE;
+// ============ راه‌اندازی خودکار ============
+if (typeof window !== 'undefined') {
+  window.PROFILE = PROFILE;
+         }
