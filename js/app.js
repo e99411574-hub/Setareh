@@ -40,6 +40,7 @@ var APP = {
     if (typeof SHOP !== 'undefined' && SHOP.init) SHOP.init();
     if (typeof WHEEL !== 'undefined' && WHEEL.init) WHEEL.init();
     if (typeof MISSIONS !== 'undefined' && MISSIONS.init) MISSIONS.init();
+    if (typeof AUTH !== 'undefined' && AUTH.init) AUTH.init();
 
     if (typeof initAudio === 'function') {
       document.addEventListener('click', function once() {
