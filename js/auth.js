@@ -33,14 +33,12 @@ const AUTH = (() => {
         display_name: displayName || email.split('@')[0]
       });
 
-      // اگه توکن داشت → وارد شده
       if (data && data.access_token) {
         await onLoginSuccess(data, displayName);
         showMsg('✅ ثبت‌نام موفق! خوش آمدی 🌟', false);
         return { ok: true, user: data.user };
       }
 
-      // نیاز به تأیید ایمیل
       if (data && data.user && !data.access_token) {
         showMsg('📧 لینک تأیید به ایمیلت فرستادیم', false);
         return { ok: true, needsConfirm: true };
@@ -97,18 +95,15 @@ const AUTH = (() => {
 
   // ============ بعد از ورود موفق ============
   async function onLoginSuccess(data, displayName) {
-    // ذخیره سشن
     if (typeof SB !== 'undefined' && SB._saveSession) {
       SB._saveSession();
     }
 
-    // 👇 sync کاربر با جدول public.users
+    // sync کاربر با جدول public.users
     await syncUser(displayName);
 
-    // آپدیت UI
     updateUserUI();
 
-    // رفرش پروفایل
     if (typeof PROFILE !== 'undefined' && PROFILE.refresh) {
       setTimeout(() => PROFILE.refresh(), 300);
     }
@@ -120,11 +115,12 @@ const AUTH = (() => {
       const user = getUser();
       if (!user || !user.id) return;
 
-      // چک کن کاربر هست یا نه
-      const { data: existing } = await SB.from('users')
+      // چک کن کاربر هست یا نه (بدون single)
+      const result = await SB.from('users')
         .select('id')
-        .eq('id', user.id)
-        .single();
+        .eq('id', user.id);
+
+      const existing = result && result.data && result.data[0];
 
       if (existing && existing.id) {
         // کاربر هست → آپدیت last_seen
@@ -152,7 +148,6 @@ const AUTH = (() => {
       }
     } catch (err) {
       console.warn('⚠️ syncUser error:', err.message);
-      // اگه خطا داد، مشکلی نیست - اپ کار می‌کنه
     }
   }
 
@@ -180,7 +175,7 @@ const AUTH = (() => {
       return 'ایمیل یا رمز اشتباهه';
     }
     if (m.includes('email not confirmed')) {
-      return 'ایمیل تأیید نشده — بریم ایمیلت رو چک کن';
+      return 'ایمیل تأیید نشده — برو ایمیلت رو چک کن';
     }
     if (m.includes('password') && m.includes('short')) {
       return 'رمز خیلی کوتاهه (حداقل ۶ کاراکتر)';
@@ -350,7 +345,6 @@ const AUTH = (() => {
       SB.init();
     }
 
-    // اگه سشن بود، sync کن
     if (isLoggedIn()) {
       await syncUser();
       updateUserUI();
