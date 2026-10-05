@@ -10,6 +10,8 @@ const CHAT = (() => {
   let _mediaRecorder = null;
   let _audioChunks = [];
   let _recordingStart = 0;
+  let _currentAudio = null;
+  let _currentBtn = null;
 
   function init() {
     console.log('💬 CHAT: آماده');
@@ -90,6 +92,7 @@ const CHAT = (() => {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
   }
 
+  // ============ لود دوستان ============
   async function loadFriends() {
     const box = document.getElementById('friendsList');
     if (!box) return;
@@ -434,7 +437,8 @@ const CHAT = (() => {
         <button class="chat-room-back" onclick="CHAT.closeRoom()">‹</button>
         <div class="chat-room-name">${escapeHtml(user.display_name || 'کاربر')}</div>
         <div class="chat-room-actions">
-          <button class="chat-room-action" onclick="CHAT.showUserMenu('${user.id}', '')">⋮</button>
+          <button class="chat-room-action" onclick="CHAT.showGiftMenu()" title="ارسال سکه/الماس">💰</button>
+          <button class="chat-room-action" onclick="CHAT.showGameMenu()" title="بازی با دوست">🎮</button>
         </div>
       </div>
       <div class="chat-room-messages" id="chatMessages">
@@ -458,6 +462,7 @@ const CHAT = (() => {
     _refreshTimer = null;
     _currentRoom = null;
     _messages = [];
+    if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; _currentBtn = null; }
     const el = document.getElementById('chatRoom');
     if (el) el.remove();
   }
@@ -476,21 +481,26 @@ const CHAT = (() => {
       );
       all.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
       _messages = all;
-      if (!all.length) {
-        box.innerHTML = '<div style="text-align:center;padding:30px;color:#b2bec3;font-size:13px;">شروع گفتگو کن! 👋</div>';
-        return;
-      }
       let html = '';
-      all.forEach(m => { html += renderMessage(m, me.id); });
-      box.innerHTML = html;
-      box.scrollTop = box.scrollHeight;
+      if (!all.length) {
+        html = '<div style="text-align:center;padding:30px;color:#b2bec3;font-size:13px;">شروع گفتگو کن! 👋</div>';
+      } else {
+        all.forEach(m => { html += renderMessage(m, me.id); });
+      }
+      // فقط اگه محتوا عوض شده، آپدیت کن (جلوگیری از سفید شدن)
+      if (box.getAttribute('data-last') !== html) {
+        box.setAttribute('data-last', html);
+        box.innerHTML = html;
+        box.scrollTop = box.scrollHeight;
+        loadVoiceDurations();
+      }
     } catch (err) {
       console.warn('loadMessages error:', err);
     }
   }
 
   function renderMessage(msg, myId) {
-    const isMe = msg.sender_id === myId;
+    const isMe = msg.sender_i    const isMe = msg.sender_id === myId;
     const cls = isMe ? 'chat-msg-me' : 'chat-msg-other';
     const time = formatTime(msg.created_at);
     if (msg.type === 'image' && msg.media_url) {
@@ -499,11 +509,24 @@ const CHAT = (() => {
         <div class="chat-msg-time" style="${isMe ? 'color:#fff' : ''}">${time}</div>
       </div>`;
     }
-        if (msg.type === 'audio' && msg.media_url) {
+    if (msg.type === 'audio' && msg.media_url) {
       return `<div class="chat-msg chat-msg-voice ${cls}">
         <button class="voice-play-btn" onclick="CHAT.playVoice(this, '${escapeHtml(msg.media_url)}')">▶</button>
         <div class="voice-wave"><span></span><span></span><span></span><span></span><span></span></div>
+        <span class="voice-dur" data-url="${escapeHtml(msg.media_url)}" style="font-size:11px;opacity:.8;min-width:32px;">۰:۰۰</span>
         <div style="font-size:10px;opacity:.7;">${time}</div>
+      </div>`;
+    }
+    if (msg.type === 'gift') {
+      return `<div class="chat-msg ${cls}" style="background:linear-gradient(135deg,#FDCB6E,#E67E22);color:#fff;font-weight:bold;">
+        🎁 ${escapeHtml(msg.text || '')}
+        <div class="chat-msg-time" style="color:#fff">${time}</div>
+      </div>`;
+    }
+    if (msg.type === 'game_invite') {
+      return `<div class="chat-msg ${cls}" style="background:linear-gradient(135deg,#6C5CE7,#0984E3);color:#fff;font-weight:bold;">
+        🎮 ${escapeHtml(msg.text || '')}
+        <div class="chat-msg-time" style="color:#fff">${time}</div>
       </div>`;
     }
     return `<div class="chat-msg ${cls}">
@@ -653,15 +676,192 @@ const CHAT = (() => {
     }
   }
 
-  let _currentAudio = null;
   function playVoice(btn, url) {
-    if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
-    const audio = new Audio(url);
+    if (_currentAudio && _currentBtn === btn && !_currentAudio.paused) {
+      _currentAudio.pause();
+      btn.textContent = '▶';
+      return;
+    }
+    if (_currentAudio) {
+      _currentAudio.pause();
+      if (_currentBtn) _currentBtn.textContent = '▶';
+    }
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audio.src = url;
     _currentAudio = audio;
-    btn.textContent = '⏸';
-    audio.play();
-    audio.onended = () => { btn.textContent = '▶'; _currentAudio = null; };
-    audio.onerror = () => { btn.textContent = '▶'; showToast('❌ خطا در پخش'); };
+    _currentBtn = btn;
+    btn.textContent = '⏳';
+    audio.oncanplay = () => {
+      btn.textContent = '⏸';
+      audio.play().catch(err => {
+        console.warn('play error:', err);
+        btn.textContent = '▶';
+        showToast('❌ خطا در پخش ویس');
+      });
+    };
+    audio.onended = () => { btn.textContent = '▶'; _currentAudio = null; _currentBtn = null; };
+    audio.onerror = (e) => {
+      console.warn('audio error:', e);
+      btn.textContent = '▶';
+      showToast('❌ فرمت ویس پشتیبانی نمیشه');
+    };
+    audio.load();
+  }
+
+  function loadVoiceDurations() {
+    const els = document.querySelectorAll('.voice-dur');
+    els.forEach(el => {
+      const url = el.getAttribute('data-url');
+      if (!url || el.getAttribute('data-loaded') === '1') return;
+      el.setAttribute('data-loaded', '1');
+      const a = new Audio();
+      a.preload = 'metadata';
+      a.src = url;
+      a.onloadedmetadata = () => {
+        const dur = a.duration;
+        if (isFinite(dur) && dur > 0) {
+          const m = Math.floor(dur / 60);
+          const s = Math.floor(dur % 60);
+          const faS = s < 10 ? '۰' + toFa(s) : toFa(s);
+          el.textContent = toFa(m) + ':' + faS;
+        } else {
+          el.textContent = '—';
+        }
+      };
+      a.onerror = () => { el.textContent = '—'; };
+    });
+  }
+
+  function toFa(n) {
+    const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+    return String(n).replace(/\d/g, d => fa[+d]);
+  }
+
+  function showGiftMenu() {
+    const overlay = document.createElement('div');
+    overlay.className = 'user-menu-popup';
+    overlay.id = 'giftMenu';
+    overlay.onclick = (e) => { if (e.target === overlay) closeGiftMenu(); };
+    overlay.innerHTML = `
+      <div class="user-menu-box">
+        <div style="text-align:center;padding:12px;font-weight:bold;color:#6C5CE7;">💰 ارسال هدیه</div>
+        <div class="user-menu-item" onclick="CHAT.sendGift('coin', 10); CHAT.closeGiftMenu();">
+          <span>🪙</span><span>۱۰ سکه</span>
+        </div>
+        <div class="user-menu-item" onclick="CHAT.sendGift('coin', 50); CHAT.closeGiftMenu();">
+          <span>🪙</span><span>۵۰ سکه</span>
+        </div>
+        <div class="user-menu-item" onclick="CHAT.sendGift('gem', 1); CHAT.closeGiftMenu();">
+          <span>💎</span><span>۱ الماس</span>
+        </div>
+        <div class="user-menu-item" onclick="CHAT.sendGift('gem', 5); CHAT.closeGiftMenu();">
+          <span>💎</span><span>۵ الماس</span>
+        </div>
+        <div class="user-menu-item user-menu-cancel" onclick="CHAT.closeGiftMenu()">
+          <span>انصراف</span>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  }
+
+  function closeGiftMenu() {
+    const el = document.getElementById('giftMenu');
+    if (el) el.remove();
+  }
+
+  async function sendGift(type, amount) {
+    if (!_currentRoom) return;
+    const me = SB.getUser();
+    if (!me) return;
+    const user = STATE.getUser();
+    if (type === 'coin' && (user.coins || 0) < amount) {
+      showToast('❌ سکه کافی نداری');
+      return;
+    }
+    if (type === 'gem' && (user.gems || 0) < amount) {
+      showToast('❌ الماس کافی نداری');
+      return;
+    }
+    try {
+      if (type === 'coin') {
+        user.coins = (user.coins || 0) - amount;
+      } else {
+        user.gems = (user.gems || 0) - amount;
+      }
+      STATE.saveUser(user);
+      if (typeof APP !== 'undefined' && APP.updateHeader) APP.updateHeader();
+
+      const text = type === 'coin'
+        ? `${amount} سکه فرستاد 🪙`
+        : `${amount} الماس فرستاد 💎`;
+      await SB.insert('messages', {
+        sender_id: me.id,
+        receiver_id: _currentRoom.id,
+        text: text,
+        type: 'gift'
+      });
+      showToast('🎁 هدیه فرستاده شد');
+      if (typeof playSnd === 'function') playSnd('success');
+      loadMessages();
+    } catch (err) {
+      console.warn('sendGift error:', err);
+      showToast('❌ خطا در ارسال هدیه');
+    }
+  }
+
+  function showGameMenu() {
+    const overlay = document.createElement('div');
+    overlay.className = 'user-menu-popup';
+    overlay.id = 'gameMenu';
+    overlay.onclick = (e) => { if (e.target === overlay) closeGameMenu(); };
+    overlay.innerHTML = `
+      <div class="user-menu-box">
+        <div style="text-align:center;padding:12px;font-weight:bold;color:#6C5CE7;">🎮 بازی با دوست</div>
+        <div class="user-menu-item" onclick="CHAT.sendGameInvite('سنگ کاغذ قیچی'); CHAT.closeGameMenu();">
+          <span>✊</span><span>سنگ کاغذ قیچی</span>
+        </div>
+        <div class="user-menu-item" onclick="CHAT.sendGameInvite('حدس عدد'); CHAT.closeGameMenu();">
+          <span>🔢</span><span>حدس عدد</span>
+        </div>
+        <div class="user-menu-item" onclick="CHAT.sendGameInvite('دوز'); CHAT.closeGameMenu();">
+          <span>❌</span><span>دوز</span>
+        </div>
+        <div class="user-menu-item" onclick="CHAT.sendGameInvite('حافظه'); CHAT.closeGameMenu();">
+          <span>🃏</span><span>حافظه</span>
+        </div>
+        <div class="user-menu-item user-menu-cancel" onclick="CHAT.closeGameMenu()">
+          <span>انصراف</span>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  }
+
+  function closeGameMenu() {
+    const el = document.getElementById('gameMenu');
+    if (el) el.remove();
+  }
+
+  async function sendGameInvite(gameName) {
+    if (!_currentRoom) return;
+    const me = SB.getUser();
+    if (!me) return;
+    try {
+      await SB.insert('messages', {
+        sender_id: me.id,
+        receiver_id: _currentRoom.id,
+        text: `دعوت به بازی ${gameName}`,
+        type: 'game_invite'
+      });
+      showToast('🎮 دعوت فرستاده شد');
+      if (typeof playSnd === 'function') playSnd('click');
+      loadMessages();
+    } catch (err) {
+      console.warn('sendGameInvite error:', err);
+      showToast('❌ خطا در ارسال دعوت');
+    }
   }
 
   return {
@@ -670,6 +870,8 @@ const CHAT = (() => {
     loadRequests, loadBlocked, renderAvatar, escapeHtml,
     showUserMenu, closeUserMenu, removeFriend, blockUser, unblockUser,
     clearHistory, openRoom, closeRoom, loadMessages, sendMessage, sendImage,
-    toggleRecord, sendVoice, playVoice
+    toggleRecord, sendVoice, playVoice, loadVoiceDurations,
+    showGiftMenu, closeGiftMenu, sendGift,
+    showGameMenu, closeGameMenu, sendGameInvite
   };
 })();
