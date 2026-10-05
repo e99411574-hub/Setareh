@@ -1,4 +1,4 @@
-// ===== app.js - راه‌اندازی و صفحهٔ اصلی ستاره =====
+// ===== app.js — راه‌اندازی و صفحهٔ اصلی ستاره =====
 
 var APP = {
   version: '2.0.0',
@@ -12,7 +12,7 @@ var APP = {
 
     STATE.init();
 
-    // تست اتصال Supabase (از طریق Toast)
+    // نمایش وضعیت Supabase
     setTimeout(function() {
       var msg = 'SB: ' + (typeof SB !== 'undefined' ? '✅' : '❌') + ' | ';
       msg += 'supabase: ' + (typeof supabase !== 'undefined' ? '✅' : '❌') + ' | ';
@@ -41,6 +41,7 @@ var APP = {
     if (typeof WHEEL !== 'undefined' && WHEEL.init) WHEEL.init();
     if (typeof MISSIONS !== 'undefined' && MISSIONS.init) MISSIONS.init();
     if (typeof AUTH !== 'undefined' && AUTH.init) AUTH.init();
+    if (typeof CHAT !== 'undefined' && CHAT.init) CHAT.init();
 
     if (typeof initAudio === 'function') {
       document.addEventListener('click', function once() {
@@ -66,7 +67,7 @@ var APP = {
     console.log('⭐ ستاره آماده است — نسخه', this.version);
   },
 
-  // ============ ناوبری پایین ============
+  // ============ نوار پایین ============
   bindNav: function() {
     var btns = document.querySelectorAll('.nav-btn');
     for (var i = 0; i < btns.length; i++) {
@@ -77,7 +78,7 @@ var APP = {
     }
   },
 
-  // ============ منوی همبرگر ============
+  // ============ منوی کشویی ============
   bindMenu: function() {
     var btn = document.getElementById('menuBtn');
     var menu = document.getElementById('sideMenu');
@@ -123,7 +124,7 @@ var APP = {
     if (nameEl) nameEl.textContent = user.name || t('guest');
   },
 
-  // ============ سلام روز ============
+  // ============ سلام ============
   setGreeting: function() {
     var h = new Date().getHours();
     var key = 'greet_evening';
@@ -135,7 +136,7 @@ var APP = {
     if (el) el.textContent = t(key);
   },
 
-  // ============ رندر صفحهٔ خانه ============
+  // ============ رندر خانه ============
   renderHome: function() {
     var c = document.getElementById('homeContent');
     if (!c) return;
@@ -143,20 +144,24 @@ var APP = {
     var user = STATE.getUser();
     var html = '<div class="home-page">';
 
+    // خوش‌آمد
     html += '<div class="welcome-card">';
     html += '<div class="welcome-icon">⭐</div>';
     html += '<div class="welcome-text">';
-    html += '<div class="welcome-title">' + t('welcome') + ' ' + (user.name || t('guest')) + '!</div>';
+    html += '<div class="welcome-title">' + t('welcome') + '، ' + (user.name || t('guest')) + '!</div>';
     html += '<div class="welcome-sub">' + t('welcome_sub') + '</div>';
     html += '</div>';
     html += '</div>';
 
+    // شعر روز
     html += this._renderHomePoem();
 
+    // گردونه
     if (typeof WHEEL !== 'undefined' && WHEEL.renderSection) {
       html += WHEEL.renderSection();
     }
 
+    // ماموریت‌ها
     if (typeof MISSIONS !== 'undefined' && MISSIONS.render) {
       html += '<div id="missionsContainer">' + MISSIONS.render() + '</div>';
     }
@@ -195,11 +200,11 @@ var APP = {
         });
 
       poems = [
-        { poet: 'حافظ', text: 'دوش دیدم که ملائک در میخانه زدند\nگل آدم بسرشتند و به پیمانه زدند' },
-        { poet: 'سعدی', text: 'بنی آدم اعضای یک پیکرند\nکه در آفرینش ز یک گوهرند' },
-        { poet: 'مولانا', text: 'بشنو این نی چون شکایت می‌کند\nاز جدایی‌ها حکایت می‌کند' },
-        { poet: 'فردوسی', text: 'توانا بود هر که دانا بود\nز دانش دل پیر برنا بود' },
-        { poet: 'خیام', text: 'این کوزه چو من عاشق زاری بوده است\nدر بند سر زلف نگاری بوده است' }
+        { poet: 'حافظ', text: 'گل آن باشد که در باغ آید و بی‌رنجِ خار آید' },
+        { poet: 'سعدی', text: 'به راه بادیه رفتن به از نشستن باطل' },
+        { poet: 'مولانا', text: 'از جان چه خبر داری کز جان خبرت نبود' },
+        { poet: 'فردوسی', text: 'توانا بود هر که دانا بود' },
+        { poet: 'خیام', text: 'در دیر مغان آیین کفر و دین نباشد' }
       ];
     }
 
@@ -208,59 +213,71 @@ var APP = {
     return poems[idx];
   },
 
+  // ============ شروع بازی ============
   startGame: function(gameId) {
     if (typeof playSnd === 'function') playSnd('tap');
     var fn = window['startGame_' + gameId];
     if (typeof fn === 'function') fn();
-    else if (typeof showToast === 'function') showToast('🎮 ' + t('soon'));
+    else if (typeof showToast === 'function') showToast('🚧 ' + t('soon'));
   },
 
+  // ============ ابزار ============
   openTool: function(toolId) {
     if (typeof playSnd === 'function') playSnd('tap');
     var fn = window['openTool_' + toolId];
     if (typeof fn === 'function') fn();
-    else if (typeof showToast === 'function') showToast('🧰 ' + t('soon'));
+    else if (typeof showToast === 'function') showToast('🚧 ' + t('soon'));
   },
 
+  // ============ منوی بازی‌ها ============
   renderGamesMenu: function() {
     var c = document.getElementById('gamesContent');
     if (!c) return;
+
     var html = '<div class="section-title" style="margin:10px 0 16px"><span class="icon">🎮</span><span>' + t('games') + '</span></div>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+
     var games = [
       { id: 'rps',    icon: '✊', label: 'سنگ کاغذ قیچی', color: 'purple' },
-      { id: 'guess',  icon: '🔢', label: 'حدس عدد',      color: 'blue' },
-      { id: 'ttt',    icon: '❌', label: 'دوز',          color: 'pink' },
-      { id: 'memory', icon: '🃏', label: 'حافظه',        color: 'orange' }
+      { id: 'guess',  icon: '🔢', label: 'حدس عدد',       color: 'blue' },
+      { id: 'ttt',    icon: '❌', label: 'دوز',           color: 'pink' },
+      { id: 'memory', icon: '🃏', label: 'حافظه',         color: 'orange' }
     ];
+
     for (var i = 0; i < games.length; i++) {
       var g = games[i];
-      html += '<div class="card press color-' + g.color + '" onclick="APP.startGame(\'' + g.id + '\')" style="text-align:center;padding:22px 12px">';
+      html += '<div class="card press color-' + g.color + '" onclick="APP.startGame(\'' + g.id + '\')" style="text-align:center">';
       html += '<div style="font-size:44px;margin-bottom:8px">' + g.icon + '</div>';
       html += '<div style="font-weight:800;font-size:14px">' + g.label + '</div>';
       html += '</div>';
     }
+
     html += '</div>';
     c.innerHTML = html;
   },
 
+  // ============ منوی ابزارها ============
   renderToolsMenu: function() {
     var c = document.getElementById('toolsContent');
     if (!c) return;
+
     var html = '<div class="section-title" style="margin:10px 0 16px"><span class="icon">🧰</span><span>' + t('tools') + '</span></div>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+
     var tools = [
       { id: 'calc',    icon: '🧮', label: 'ماشین‌حساب', color: 'yellow' },
       { id: 'planner', icon: '📅', label: 'برنامه',     color: 'green' },
-      { id: 'qa',      icon: '❓', label: 'پرسش',        color: 'purple' }
+      { id: 'qa',      icon: '❓', label: 'پرسش',       color: 'purple' }
     ];
+
     for (var i = 0; i < tools.length; i++) {
       var tl = tools[i];
-      html += '<div class="card press color-' + tl.color + '" onclick="APP.openTool(\'' + tl.id + '\')" style="text-align:center;padding:22px 12px">';
+      html += '<div class="card press color-' + tl.color + '" onclick="APP.openTool(\'' + tl.id + '\')" style="text-align:center">';
       html += '<div style="font-size:44px;margin-bottom:8px">' + tl.icon + '</div>';
       html += '<div style="font-weight:800;font-size:14px">' + tl.label + '</div>';
       html += '</div>';
     }
+
     html += '</div>';
     c.innerHTML = html;
   },
@@ -276,9 +293,7 @@ var APP = {
   }
 };
 
-// ============ اجرای خودکار ============
+// ============ راه‌اندازی خودکار ============
 window.addEventListener('DOMContentLoaded', function() {
   try { APP.init(); } catch (e) { console.error('APP init error:', e); }
 });
-
-window.APP = APP;
