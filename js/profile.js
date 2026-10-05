@@ -198,18 +198,12 @@ var PROFILE = {
   render: function() {
     var u = SHOP.getUser();
     var sbUser = (typeof SB !== 'undefined' && SB.getUser) ? SB.getUser() : null;
-    var sbData = null;
-
-    // اگه کاربر وارد شده، دادهٔ username و is_admin رو از SB بگیریم
-    if (sbUser) {
-      // async fetch — ولی برای سرعت، از cached استفاده می‌کنیم
-      // اگه قبلاً توی STATE ذخیره شده، ازش استفاده کن
-      sbData = STATE.get('sbUserData') || null;
-    }
+    var sbData = STATE.get('sbUserData') || null;
 
     var username = sbData ? sbData.username : null;
     var isVerified = sbData ? sbData.is_verified : false;
     var isAdmin = sbData ? sbData.is_admin : false;
+    var displayName = (sbData && sbData.display_name) || u.name || t('noName');
 
     var html = '<div class="profile-page">';
 
@@ -220,19 +214,18 @@ var PROFILE = {
     html += '<div class="profile-hero">';
     html += '<div class="hero-avatar">' + this.renderAvatar(u) + '</div>';
     html += '<div class="hero-info">';
-    html += '<div class="hero-name">' + (u.name || t('noName'));
-    if (isVerified) html += ' <span style="color:#FDCB6E;font-size:20px;" title="تأیید شده">✓</span>';
-    if (isAdmin) html += ' <span style="font-size:20px;" title="مدیر">👑</span>';
+    html += '<div class="hero-name">' + escapeHtml(displayName);
+    if (isVerified) html += ' <span style="color:#FDCB6E;font-size:18px;" title="تأیید شده">✓</span>';
+    if (isAdmin) html += ' <span style="font-size:18px;" title="مدیر">👑</span>';
     html += '</div>';
 
-    // نمایش @username
     if (username) {
-      html += '<div class="hero-username" style="font-size:13px;color:#6C5CE7;font-weight:600;margin-top:4px;">@' + username + '</div>';
+      html += '<div class="hero-username" dir="ltr" style="font-size:13px;color:#6C5CE7;font-weight:600;margin-top:4px;text-align:center;">@' + escapeHtml(username) + '</div>';
     } else if (sbUser) {
-      html += '<div class="hero-username" style="font-size:13px;color:#b2bec3;margin-top:4px;">بدون نام کاربری</div>';
+      html += '<div class="hero-username" style="font-size:13px;color:#b2bec3;margin-top:4px;text-align:center;">بدون نام کاربری</div>';
     }
 
-    html += '<div class="hero-bio">' + (u.bio || t('noBio')) + '</div>';
+    html += '<div class="hero-bio">' + escapeHtml(u.bio || t('noBio')) + '</div>';
     html += '</div>';
     html += '</div>';
 
@@ -255,7 +248,7 @@ var PROFILE = {
     // فرم نام
     if (this._nameMode) {
       html += '<div class="profile-list"><div class="profile-input-row">';
-      html += '<input id="pNameInput" type="text" maxlength="20" placeholder="' + t('namePlaceholder') + '" value="' + (u.name || '') + '">';
+      html += '<input id="pNameInput" type="text" maxlength="20" placeholder="' + t('namePlaceholder') + '" value="' + escapeHtml(u.name || '') + '">';
       html += '<button class="btn-save" onclick="PROFILE.saveName()">✓</button>';
       html += '<button class="btn-cancel" onclick="PROFILE.cancelName()">✕</button>';
       html += '</div></div>';
@@ -264,7 +257,7 @@ var PROFILE = {
     // فرم بیو
     if (this._bioMode) {
       html += '<div class="profile-list"><div class="profile-input-row">';
-      html += '<textarea id="pBioInput" maxlength="150" rows="2" placeholder="' + t('bioPlaceholder') + '">' + (u.bio || '') + '</textarea>';
+      html += '<textarea id="pBioInput" maxlength="150" rows="2" placeholder="' + t('bioPlaceholder') + '">' + escapeHtml(u.bio || '') + '</textarea>';
       html += '<button class="btn-save" onclick="PROFILE.saveBio()">✓</button>';
       html += '<button class="btn-cancel" onclick="PROFILE.cancelBio()">✕</button>';
       html += '</div></div>';
@@ -276,7 +269,7 @@ var PROFILE = {
       html += '<div style="font-size:13px;color:#636e72;margin-bottom:8px;">نام کاربری (فقط حرف، عدد و _)</div>';
       html += '<div class="profile-input-row" style="display:flex;gap:8px;align-items:center;">';
       html += '<span style="color:#6C5CE7;font-weight:bold;">@</span>';
-      html += '<input id="pUsernameInput" type="text" maxlength="20" placeholder="username" value="' + (username || '') + '" dir="ltr" style="flex:1;">';
+      html += '<input id="pUsernameInput" type="text" maxlength="20" placeholder="username" value="' + escapeHtml(username || '') + '" dir="ltr" style="flex:1;">';
       html += '<button class="btn-save" onclick="PROFILE.saveUsername()">✓</button>';
       html += '<button class="btn-cancel" onclick="PROFILE.cancelUsername()">✕</button>';
       html += '</div>';
@@ -316,7 +309,7 @@ var PROFILE = {
       html += '<div class="profile-item" onclick="PROFILE.editUsername()">';
       html += '<span class="item-icon">🆔</span>';
       html += '<span class="item-text">نام کاربری</span>';
-      html += '<span class="item-value">' + (username ? '@' + username : 'تنظیم کن') + '</span>';
+      html += '<span class="item-value" dir="ltr" style="display:inline-block;">' + (username ? '@' + escapeHtml(username) : 'تنظیم کن') + '</span>';
       html += '<span class="item-chevron">‹</span>';
       html += '</div>';
     }
@@ -329,13 +322,13 @@ var PROFILE = {
     html += '</div>';
     html += '<div class="profile-item" onclick="ROUTER.go(\'shop\')">';
     html += '<span class="item-icon">🪙</span>';
-    html += '<span class="item-text">' + t('coins') + '</span>';
+    html += '<span class="item-text">سکه</span>';
     html += '<span class="item-value">' + fmtNum(u.coins || 0) + '</span>';
     html += '<span class="item-chevron">‹</span>';
     html += '</div>';
     html += '<div class="profile-item" onclick="ROUTER.go(\'shop\')">';
     html += '<span class="item-icon">💎</span>';
-    html += '<span class="item-text">' + t('gems') + '</span>';
+    html += '<span class="item-text">الماس</span>';
     html += '<span class="item-value">' + fmtNum(u.gems || 0) + '</span>';
     html += '<span class="item-chevron">‹</span>';
     html += '</div>';
@@ -348,13 +341,21 @@ var PROFILE = {
 
     // آمار
     html += '<div class="profile-list"><div class="stats-row">';
-    html += '<div class="stat-cell"><div class="stat-num">' + fmtNum(u.coins || 0) + '</div><div class="stat-lbl">🪙 ' + t('coins') + '</div></div>';
+    html += '<div class="stat-cell"><div class="stat-num">' + fmtNum(u.coins || 0) + '</div><div class="stat-lbl">🪙 سکه</div></div>';
     html += '<div class="stat-cell"><div class="stat-num">' + fmtNum(u.streak || 0) + '</div><div class="stat-lbl">🔥 ' + t('streak') + '</div></div>';
     html += '<div class="stat-cell"><div class="stat-num">' + fmtNum(u.level || 1) + '</div><div class="stat-lbl">⭐ ' + t('level') + '</div></div>';
     html += '</div></div>';
 
     html += '</div>';
     return html;
+  },
+
+  // ============ escape ============
+  escapeHtml: function(s) {
+    if (!s) return '';
+    return String(s).replace(/[&<>"']/g, function(c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
   },
 
   // ============ لود دادهٔ کاربر از Supabase ============
@@ -377,7 +378,6 @@ var PROFILE = {
 
   // ============ رفرش ============
   refresh: async function() {
-    // اول داده رو از SB بگیر
     await this.loadSbUserData();
 
     var c = document.getElementById('profileContent');
@@ -388,7 +388,6 @@ var PROFILE = {
       c.classList.add('anim-fade-in');
     }
 
-    // کارت ورود/ثبت‌نام
     if (typeof AUTH !== 'undefined' && AUTH.renderStatusCard) {
       setTimeout(function() { AUTH.renderStatusCard(); }, 50);
     }
@@ -405,7 +404,6 @@ var PROFILE = {
     if (u.gems === undefined) u.gems = 0;
     SHOP.saveUser(u);
 
-    // لود اولیه
     await this.loadSbUserData();
   }
 };
@@ -413,4 +411,4 @@ var PROFILE = {
 // ============ راه‌اندازی خودکار ============
 if (typeof window !== 'undefined') {
   window.PROFILE = PROFILE;
-  }
+      }
