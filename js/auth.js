@@ -33,14 +33,14 @@ const AUTH = (() => {
         display_name: displayName || email.split('@')[0]
       });
 
-      // اگه توی پاسخ access_token داشت → وارد شده
+      // اگه توکن داشت → وارد شده
       if (data && data.access_token) {
-        await onLoginSuccess(data);
+        await onLoginSuccess(data, displayName);
         showMsg('✅ ثبت‌نام موفق! خوش آمدی 🌟', false);
         return { ok: true, user: data.user };
       }
 
-      // اگه نیاز به تأیید ایمیل داشت
+      // نیاز به تأیید ایمیل
       if (data && data.user && !data.access_token) {
         showMsg('📧 لینک تأیید به ایمیلت فرستادیم', false);
         return { ok: true, needsConfirm: true };
@@ -85,9 +85,8 @@ const AUTH = (() => {
       }
       showMsg('👋 از حساب خارج شدی', false);
 
-      // رفرش پروفایل
-      if (typeof PROFILE !== 'undefined' && PROFILE.render) {
-        PROFILE.render();
+      if (typeof PROFILE !== 'undefined' && PROFILE.refresh) {
+        PROFILE.refresh();
       }
       return { ok: true };
     } catch (err) {
@@ -97,26 +96,70 @@ const AUTH = (() => {
   }
 
   // ============ بعد از ورود موفق ============
-  async function onLoginSuccess(data) {
+  async function onLoginSuccess(data, displayName) {
     // ذخیره سشن
     if (typeof SB !== 'undefined' && SB._saveSession) {
       SB._saveSession();
     }
 
+    // 👇 sync کاربر با جدول public.users
+    await syncUser(displayName);
+
     // آپدیت UI
     updateUserUI();
 
-    // رفرش پروفایل اگه بازه
-    if (typeof PROFILE !== 'undefined' && PROFILE.render) {
-      setTimeout(() => PROFILE.render(), 300);
+    // رفرش پروفایل
+    if (typeof PROFILE !== 'undefined' && PROFILE.refresh) {
+      setTimeout(() => PROFILE.refresh(), 300);
     }
   }
 
-  // ============ آپدیت UI پس از ورود/خروج ============
+  // ============ سینک کاربر با جدول users ============
+  async function syncUser(displayName) {
+    try {
+      const user = getUser();
+      if (!user || !user.id) return;
+
+      // چک کن کاربر هست یا نه
+      const { data: existing } = await SB.from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (existing && existing.id) {
+        // کاربر هست → آپدیت last_seen
+        await SB.update('users', {
+          last_seen: new Date().toISOString()
+        }, { id: user.id });
+        console.log('✅ کاربر قبلاً بود، آپدیت شد');
+      } else {
+        // کاربر جدید → درج
+        const name = displayName
+          || (user.user_metadata && user.user_metadata.display_name)
+          || user.email.split('@')[0];
+
+        await SB.insert('users', {
+          id: user.id,
+          email: user.email,
+          display_name: name,
+          avatar: 'male',
+          coins: 100,
+          gems: 0,
+          level: 1,
+          streak_days: 0
+        });
+        console.log('✅ کاربر جدید درج شد:', name);
+      }
+    } catch (err) {
+      console.warn('⚠️ syncUser error:', err.message);
+      // اگه خطا داد، مشکلی نیست - اپ کار می‌کنه
+    }
+  }
+
+  // ============ آپدیت UI ============
   function updateUserUI() {
     const user = getUser();
     const nameEl = document.getElementById('hdrName');
-    const avatarEl = document.getElementById('menuAvatar');
 
     if (user && nameEl) {
       const name = (user.user_metadata && user.user_metadata.display_name)
@@ -125,7 +168,7 @@ const AUTH = (() => {
     }
   }
 
-  // ============ ترجمهٔ خطاهای Supabase ============
+  // ============ ترجمهٔ خطاها ============
   function translateError(msg) {
     if (!msg) return 'خطای ناشناخته';
     const m = msg.toLowerCase();
@@ -137,7 +180,7 @@ const AUTH = (() => {
       return 'ایمیل یا رمز اشتباهه';
     }
     if (m.includes('email not confirmed')) {
-      return 'ایمیل تأیید نشده — برو ایمیلت رو چک کن';
+      return 'ایمیل تأیید نشده — بریم ایمیلت رو چک کن';
     }
     if (m.includes('password') && m.includes('short')) {
       return 'رمز خیلی کوتاهه (حداقل ۶ کاراکتر)';
@@ -147,9 +190,6 @@ const AUTH = (() => {
     }
     if (m.includes('network') || m.includes('fetch')) {
       return 'اتصال اینترنت رو چک کن';
-    }
-    if (m.includes('signup') && m.includes('disabled')) {
-      return 'ثبت‌نام غیرفعاله';
     }
     return msg;
   }
@@ -173,7 +213,7 @@ const AUTH = (() => {
     window._authMsgTimer = setTimeout(() => { el.style.display = 'none'; }, 4000);
   }
 
-  // ============ رندر کارت وضعیت (برای پروفایل) ============
+  // ============ کارت وضعیت ============
   function renderStatusCard() {
     const card = document.getElementById('userStatusCard');
     if (!card) return;
@@ -215,9 +255,11 @@ const AUTH = (() => {
     }
   }
 
-  // ============ نمایش فرم ورود/ثبت‌نام ============
+  // ============ فرم ورود/ثبت‌نام ============
   function showForm(mode) {
     const isSignup = mode === 'signup';
+    closeForm();
+
     const overlay = document.createElement('div');
     overlay.id = 'authOverlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);' +
@@ -249,17 +291,10 @@ const AUTH = (() => {
           </div>
         </div>
       </div>
-      <style>
-        @keyframes authPop {
-          from { transform: scale(.9); opacity: 0; }
-          to   { transform: scale(1); opacity: 1; }
-        }
-      </style>
     `;
 
     document.body.appendChild(overlay);
 
-    // Enter برای submit
     setTimeout(() => {
       const passEl = document.getElementById('authPassword');
       if (passEl) {
@@ -277,7 +312,7 @@ const AUTH = (() => {
     if (el) el.remove();
   }
 
-  // ============ Submit فرم ============
+  // ============ Submit ============
   async function submitSignup() {
     const email = (document.getElementById('authEmail') || {}).value || '';
     const password = (document.getElementById('authPassword') || {}).value || '';
@@ -301,7 +336,7 @@ const AUTH = (() => {
     }
   }
 
-  // ============ escape HTML ============
+  // ============ escape ============
   function escapeHtml(s) {
     if (!s) return '';
     return String(s).replace(/[&<>"']/g, c => ({
@@ -310,14 +345,14 @@ const AUTH = (() => {
   }
 
   // ============ init ============
-  function init() {
-    // راه‌اندازی SB (بارگذاری سشن)
+  async function init() {
     if (typeof SB !== 'undefined' && SB.init) {
       SB.init();
     }
 
-    // اگه کاربر لاگین بود، UI رو آپدیت کن
+    // اگه سشن بود، sync کن
     if (isLoggedIn()) {
+      await syncUser();
       updateUserUI();
     }
 
@@ -328,7 +363,8 @@ const AUTH = (() => {
     init, signup, login, logout,
     isLoggedIn, getUser, getSession,
     renderStatusCard, showForm, closeForm,
-    submitSignup, submitLogin
+    submitSignup, submitLogin,
+    syncUser
   };
 })();
 
