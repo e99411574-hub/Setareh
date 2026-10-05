@@ -1,6 +1,5 @@
 // ===== js/profile.js — صفحهٔ پروفایل =====
 
-// ===== تابع کمکی escapeHtml =====
 function escapeHtml(s) {
   if (!s) return '';
   return String(s).replace(/[&<>"']/g, function(c) {
@@ -15,11 +14,8 @@ var PROFILE = {
   _bioMode: false,
   _usernameMode: false,
 
-  goSettings: function() {
-    ROUTER.go('settings');
-  },
+  goSettings: function() { ROUTER.go('settings'); },
 
-  // ============ ویرایش نام ============
   editName: function() {
     this._nameMode = true;
     this._bioMode = false;
@@ -55,7 +51,6 @@ var PROFILE = {
     if (typeof APP !== 'undefined' && APP.updateHeader) APP.updateHeader();
   },
 
-  // ============ ویرایش بیو ============
   editBio: function() {
     this._bioMode = true;
     this._nameMode = false;
@@ -86,7 +81,6 @@ var PROFILE = {
     if (typeof showToast === 'function') showToast('✅ ' + t('bioSaved'));
   },
 
-  // ============ ویرایش نام کاربری ============
   editUsername: function() {
     this._usernameMode = true;
     this._nameMode = false;
@@ -107,28 +101,24 @@ var PROFILE = {
     var input = document.getElementById('pUsernameInput');
     if (!input) return;
     var uname = input.value.trim();
-
     if (!uname) {
       if (typeof playSnd === 'function') playSnd('error');
       if (typeof showToast === 'function') showToast('❌ نام کاربری رو وارد کن');
       return;
     }
-
     if (typeof showToast === 'function') showToast('⏳ در حال ذخیره...');
-
     var res = await AUTH.updateUsername(uname);
     if (res.ok) {
       this._usernameMode = false;
       this.refresh();
       if (typeof playSnd === 'function') playSnd('success');
-      if (typeof showToast === 'function') showToast('✅ نام کاربری ذخیره شد: @' + res.username);
+      if (typeof showToast === 'function') showToast('✅ ذخیره شد: @' + res.username);
     } else {
       if (typeof playSnd === 'function') playSnd('error');
       if (typeof showToast === 'function') showToast('❌ ' + res.error);
     }
   },
 
-  // ============ انتخاب آواتار ============
   toggleAvatarMode: function() {
     this._avatarMode = !this._avatarMode;
     this._tickMode = false;
@@ -170,7 +160,6 @@ var PROFILE = {
     reader.readAsDataURL(file);
   },
 
-  // ============ انتخاب تیک ============
   toggleTickMode: function() {
     this._tickMode = !this._tickMode;
     this._avatarMode = false;
@@ -192,7 +181,6 @@ var PROFILE = {
     if (typeof playSnd === 'function') playSnd('click');
   },
 
-  // ============ رندر آواتار ============
   renderAvatar: function(u) {
     if (u.avatar === 'custom' && u.avatarImage) {
       return '<img src="' + u.avatarImage + '" alt="avatar">';
@@ -201,7 +189,6 @@ var PROFILE = {
     return '👨';
   },
 
-  // ============ رندر اصلی ============
   render: function() {
     var u = SHOP.getUser();
     var sbUser = (typeof SB !== 'undefined' && SB.getUser) ? SB.getUser() : null;
@@ -216,7 +203,6 @@ var PROFILE = {
 
     html += '<div id="userStatusCard"></div>';
 
-    // هدر
     html += '<div class="profile-hero">';
     html += '<div class="hero-avatar">' + this.renderAvatar(u) + '</div>';
     html += '<div class="hero-info">';
@@ -235,7 +221,6 @@ var PROFILE = {
     html += '</div>';
     html += '</div>';
 
-    // دکمه‌های سریع
     html += '<div class="profile-quick">';
     html += '<div class="quick-item" onclick="PROFILE.editName()">';
     html += '<div class="quick-icon">✏️</div>';
@@ -251,7 +236,6 @@ var PROFILE = {
     html += '</div>';
     html += '</div>';
 
-    // فرم نام
     if (this._nameMode) {
       html += '<div class="profile-list"><div class="profile-input-row">';
       html += '<input id="pNameInput" type="text" maxlength="20" placeholder="' + t('namePlaceholder') + '" value="' + escapeHtml(u.name || '') + '">';
@@ -260,7 +244,6 @@ var PROFILE = {
       html += '</div></div>';
     }
 
-    // فرم بیو
     if (this._bioMode) {
       html += '<div class="profile-list"><div class="profile-input-row">';
       html += '<textarea id="pBioInput" maxlength="150" rows="2" placeholder="' + t('bioPlaceholder') + '">' + escapeHtml(u.bio || '') + '</textarea>';
@@ -269,7 +252,6 @@ var PROFILE = {
       html += '</div></div>';
     }
 
-    // فرم نام کاربری
     if (this._usernameMode) {
       html += '<div class="profile-list" style="padding:14px;">';
       html += '<div style="font-size:13px;color:#636e72;margin-bottom:8px;">نام کاربری (فقط حرف، عدد و _)</div>';
@@ -282,7 +264,6 @@ var PROFILE = {
       html += '</div>';
     }
 
-    // انتخاب آواتار
     if (this._avatarMode) {
       html += '<div class="profile-list"><div class="avatar-picker">';
       html += '<div class="avatar-opt ' + (u.avatar === 'male' ? 'active' : '') + '" onclick="PROFILE.setAvatar(\'male\')">👨</div>';
@@ -293,7 +274,6 @@ var PROFILE = {
       html += '</div></div>';
     }
 
-    // انتخاب تیک
     if (this._tickMode) {
       html += '<div class="profile-list"><div class="tick-picker">';
       var ticks = u.ownedTicks || ['star_black'];
@@ -307,7 +287,6 @@ var PROFILE = {
       html += '</div></div>';
     }
 
-    // اطلاعات
     html += '<div class="profile-list">';
 
     if (sbUser) {
@@ -344,7 +323,6 @@ var PROFILE = {
     html += '</div>';
     html += '</div>';
 
-    // آمار
     html += '<div class="profile-list"><div class="stats-row">';
     html += '<div class="stat-cell"><div class="stat-num">' + fmtNum(u.coins || 0) + '</div><div class="stat-lbl">🪙 سکه</div></div>';
     html += '<div class="stat-cell"><div class="stat-num">' + fmtNum(u.streak || 0) + '</div><div class="stat-lbl">🔥 ' + t('streak') + '</div></div>';
@@ -355,7 +333,6 @@ var PROFILE = {
     return html;
   },
 
-  // ============ لود دادهٔ کاربر از Supabase ============
   loadSbUserData: async function() {
     try {
       var sbUser = (typeof SB !== 'undefined' && SB.getUser) ? SB.getUser() : null;
@@ -373,7 +350,6 @@ var PROFILE = {
     }
   },
 
-  // ============ رفرش ============
   refresh: async function() {
     await this.loadSbUserData();
 
@@ -392,7 +368,6 @@ var PROFILE = {
     if (typeof APP !== 'undefined' && APP.updateHeader) APP.updateHeader();
   },
 
-  // ============ init ============
   init: async function() {
     var u = SHOP.getUser();
     if (!u.ownedTicks) u.ownedTicks = ['star_black'];
@@ -405,7 +380,6 @@ var PROFILE = {
   }
 };
 
-// ============ راه‌اندازی خودکار ============
 if (typeof window !== 'undefined') {
   window.PROFILE = PROFILE;
   }
