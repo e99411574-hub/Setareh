@@ -22,12 +22,10 @@ var SETTINGS = {
     { id: 'theme_dark',   name: 'تیره',    c1: '#2d2045', c2: '#a78bfa' }
   ],
 
-  // ========== بازگشت ==========
   back: function() {
     ROUTER.go('profile');
   },
 
-  // ========== تغییر زبان ==========
   setLang: function(lang) {
     STATE.set('settings.lang', lang);
     STATE.save('settings');
@@ -41,7 +39,6 @@ var SETTINGS = {
     }
   },
 
-  // ========== تغییر صدا ==========
   toggleSound: function() {
     var s = STATE.get('settings.sound');
     s = (s === false) ? true : false;
@@ -51,7 +48,6 @@ var SETTINGS = {
     this.refresh();
   },
 
-  // ========== تغییر تم ==========
   applyTheme: function(themeId) {
     STATE.set('settings.theme', themeId);
     STATE.save('settings');
@@ -63,7 +59,6 @@ var SETTINGS = {
     this.refresh();
   },
 
-  // ========== تم سفارشی ==========
   openCustomBuilder: function() {
     this._customMode = true;
     var saved = STATE.get('settings.customTheme');
@@ -125,7 +120,6 @@ var SETTINGS = {
     this.saveCustomTheme();
   },
 
-  // ========== پاک کردن داده‌ها ==========
   confirmReset: function() {
     var msg = (typeof t === 'function') ? t('confirm_reset') : 'همهٔ داده‌ها پاک شود؟';
     if (confirm(msg)) {
@@ -136,7 +130,6 @@ var SETTINGS = {
     }
   },
 
-  // ========== رندر ==========
   render: function() {
     var s = STATE.get('settings') || {};
     var currentTheme = s.theme || 'theme_purple';
@@ -145,17 +138,14 @@ var SETTINGS = {
 
     var html = '<div class="settings-page">';
 
-    // نوار بالا
     html += '<div class="settings-topbar">';
     html += '<button class="back-btn" onclick="SETTINGS.back()">›</button>';
     html += '<div class="settings-title">⚙️ ' + t('settings') + '</div>';
     html += '</div>';
 
-    // ========== بخش: عمومی ==========
     html += '<div class="settings-section">';
     html += '<div class="settings-label">🌍 عمومی</div>';
 
-    // زبان
     html += '<div class="settings-item" style="cursor:default">';
     html += '<span class="item-icon">🌍</span>';
     html += '<span class="item-text">' + t('language') + '</span>';
@@ -165,7 +155,6 @@ var SETTINGS = {
     html += '<button class="lang-btn ' + (lang === 'en' ? 'active' : '') + '" onclick="SETTINGS.setLang(\'en\')">English</button>';
     html += '</div>';
 
-    // صدا
     html += '<div class="settings-item" onclick="SETTINGS.toggleSound()">';
     html += '<span class="item-icon">' + (soundOn ? '🔊' : '🔇') + '</span>';
     html += '<span class="item-text">' + t('sound') + '</span>';
@@ -174,7 +163,6 @@ var SETTINGS = {
 
     html += '</div>';
 
-    // ========== بخش: تم ==========
     html += '<div class="settings-section">';
     html += '<div class="settings-label">🎨 رنگ و ظاهر</div>';
     html += '<div class="theme-grid">';
@@ -188,7 +176,6 @@ var SETTINGS = {
       html += '</div>';
     }
 
-    // تم سفارشی ذخیره‌شده
     var custom = STATE.get('settings.customTheme');
     if (custom) {
       var cActive = (currentTheme === 'theme_custom') ? 'active' : '';
@@ -200,21 +187,18 @@ var SETTINGS = {
 
     html += '</div>';
 
-    // دکمه ساخت تم سفارشی
     if (!this._customMode) {
       html += '<button class="custom-theme-btn" onclick="SETTINGS.openCustomBuilder()">';
       html += '🎨 ساخت تم سفارشی';
       html += '</button>';
     }
 
-    // سازندهٔ تم
     if (this._customMode) {
       html += this._renderBuilder();
     }
 
     html += '</div>';
 
-    // ========== بخش: خطرناک ==========
     html += '<div class="settings-section">';
     html += '<div class="settings-item danger" onclick="SETTINGS.confirmReset()">';
     html += '<span class="item-icon">🗑️</span>';
@@ -222,7 +206,6 @@ var SETTINGS = {
     html += '</div>';
     html += '</div>';
 
-    // ========== درباره ==========
     html += '<div class="settings-about">';
     html += '<div class="logo">⭐</div>';
     html += '<div style="font-weight:800;font-size:14px;color:var(--text)">' + t('app_name') + '</div>';
@@ -239,13 +222,11 @@ var SETTINGS = {
     var html = '<div class="theme-builder">';
     html += '<div class="builder-title">🎨 تم خودت رو بساز</div>';
 
-    // پیش‌نمایش
     html += '<div class="builder-preview" id="builderPreview" style="background:linear-gradient(135deg,' + c.bg1 + ',' + c.bg2 + ');color:' + c.text + '">';
     html += '<div class="p-title" style="color:' + c.pr + '">⭐ ' + t('app_name') + '</div>';
     html += '<div class="p-sub" style="color:' + c.gold + '">بازی کن، بساز، بدرخش</div>';
     html += '</div>';
 
-    // رنگ‌ها
     html += '<div class="builder-row">';
     html += '<span class="builder-label">🎨 رنگ اصلی پس‌زمینه</span>';
     html += '<input type="color" class="color-picker" value="' + c.bg1 + '" oninput="SETTINGS.updateCustomColor(\'bg1\', this.value)">';
@@ -271,7 +252,6 @@ var SETTINGS = {
     html += '<input type="color" class="color-picker" value="' + c.text + '" oninput="SETTINGS.updateCustomColor(\'text\', this.value)">';
     html += '</div>';
 
-    // دکمه‌ها
     html += '<div class="builder-actions">';
     html += '<button class="builder-cancel" onclick="SETTINGS.closeCustomBuilder()">لغو</button>';
     html += '<button class="builder-save" onclick="SETTINGS.saveCustomTheme()">✓ ذخیره</button>';
