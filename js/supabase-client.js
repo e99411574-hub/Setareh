@@ -17,14 +17,12 @@ var SB = {
       'Content-Type': 'application/json'
     };
 
-    // اگه کلید Authorization داشتیم، اضافه کن
     if (this._session && this._session.access_token) {
       headers['Authorization'] = 'Bearer ' + this._session.access_token;
     } else {
       headers['Authorization'] = 'Bearer ' + SUPABASE_KEY;
     }
 
-    // اگه هدرهای اضافی داشتیم، ترکیب کن
     if (options.headers) {
       for (var key in options.headers) {
         headers[key] = options.headers[key];
@@ -54,7 +52,7 @@ var SB = {
     });
   },
 
-  // ============ راه‌اندازی (بارگذاری سشن) ============
+  // ============ راه‌اندازی ============
   init: function() {
     try {
       var saved = localStorage.getItem('setareh_sb_session');
@@ -75,22 +73,14 @@ var SB = {
 
   // ============ تست اتصال ============
   testConnection: function() {
-    var self = this;
-    // یه درخواست ساده: گرفتن لیست کاربران (اگه RLS درست باشه، ممکنه خالی باشه)
     return this._request('/rest/v1/users?select=id&limit=1', { method: 'GET' })
       .then(function(res) {
         if (res.ok) {
           console.log('✅ SB test success');
           return true;
-        } else if (res.status === 404) {
-          // جدول users هنوز ساخته نشده — ولی اتصال برقراره
-          console.log('✅ SB connected (table not found yet)');
-          return true;
-        } else {
-          console.warn('⚠️ SB test status:', res.status, res.data);
-          // حتی اگه ۴۰۰ بده، یعنی اتصال برقراره
-          return true;
         }
+        console.log('✅ SB connected (status ' + res.status + ')');
+        return true;
       })
       .catch(function(err) {
         console.error('❌ SB test failed:', err);
@@ -115,8 +105,28 @@ var SB = {
         if (res.data && res.data.error_description) msg = res.data.error_description;
         throw new Error(msg);
       }
+      if (res.data.access_token) {
+        self._session = res.data;
+        self._user = res.data.user;
+        self._saveSession();
+      }
+      return res.data;
+    });
+  },
 
-      // اگه توکن داشت، ذخیره کن
+  // ============ ورود مهمان (Anonymous) ============
+  signInAnonymously: function() {
+    var self = this;
+    return this._request('/auth/v1/signup', {
+      method: 'POST',
+      body: {}
+    }).then(function(res) {
+      if (!res.ok) {
+        var msg = 'خطا در ورود مهمان';
+        if (res.data && res.data.message) msg = res.data.message;
+        if (res.data && res.data.error_description) msg = res.data.error_description;
+        throw new Error(msg);
+      }
       if (res.data.access_token) {
         self._session = res.data;
         self._user = res.data.user;
@@ -142,7 +152,6 @@ var SB = {
         if (res.data && res.data.message) msg = res.data.message;
         throw new Error(msg);
       }
-
       self._session = res.data;
       self._user = res.data.user;
       self._saveSession();
@@ -150,36 +159,24 @@ var SB = {
     });
   },
 
-  // ============ ورود با OTP (پیامک/ایمیل) ============
+  // ============ OTP ============
   signInWithOtp: function(email) {
     return this._request('/auth/v1/otp', {
       method: 'POST',
-      body: {
-        email: email,
-        create_user: true
-      }
+      body: { email: email, create_user: true }
     }).then(function(res) {
-      if (!res.ok) {
-        throw new Error('خطا در ارسال کد');
-      }
+      if (!res.ok) throw new Error('خطا در ارسال کد');
       return true;
     });
   },
 
-  // ============ تأیید OTP ============
   verifyOtp: function(email, token) {
     var self = this;
     return this._request('/auth/v1/verify', {
       method: 'POST',
-      body: {
-        email: email,
-        token: token,
-        type: 'email'
-      }
+      body: { email: email, token: token, type: 'email' }
     }).then(function(res) {
-      if (!res.ok) {
-        throw new Error('کد اشتباهه');
-      }
+      if (!res.ok) throw new Error('کد اشتباهه');
       self._session = res.data;
       self._user = res.data.user;
       self._saveSession();
@@ -197,7 +194,6 @@ var SB = {
         localStorage.removeItem('setareh_sb_session');
       })
       .catch(function() {
-        // به هر حال پاک کن
         self._session = null;
         self._user = null;
         localStorage.removeItem('setareh_sb_session');
@@ -205,17 +201,9 @@ var SB = {
   },
 
   // ============ کاربر فعلی ============
-  getUser: function() {
-    return this._user;
-  },
-
-  getSession: function() {
-    return this._session;
-  },
-
-  isLoggedIn: function() {
-    return this._session !== null && this._user !== null;
-  },
+  getUser: function() { return this._user; },
+  getSession: function() { return this._session; },
+  isLoggedIn: function() { return this._session !== null && this._user !== null; },
 
   // ============ ذخیره سشن ============
   _saveSession: function() {
@@ -229,7 +217,6 @@ var SB = {
   },
 
   // ============ خواندن از دیتابیس ============
-  // مثال: SB.from('users').select('*')
   from: function(table) {
     var self = this;
     var basePath = '/rest/v1/' + table;
@@ -240,37 +227,19 @@ var SB = {
     var isSingle = false;
 
     var api = {
-      select: function(cols) {
-        selectCols = cols || '*';
-        return api;
-      },
-      eq: function(col, val) {
-        filters.push(col + '=eq.' + encodeURIComponent(val));
-        return api;
-      },
-      neq: function(col, val) {
-        filters.push(col + '=neq.' + encodeURIComponent(val));
-        return api;
-      },
+      select: function(cols) { selectCols = cols || '*'; return api; },
+      eq: function(col, val) { filters.push(col + '=eq.' + encodeURIComponent(val)); return api; },
+      neq: function(col, val) { filters.push(col + '=neq.' + encodeURIComponent(val)); return api; },
       order: function(col, opts) {
         var dir = (opts && opts.ascending === false) ? 'desc' : 'asc';
         orderCol = col + '.' + dir;
         return api;
       },
-      limit: function(n) {
-        limitNum = n;
-        return api;
-      },
-      single: function() {
-        isSingle = true;
-        return api;
-      },
-      // اجرای نهایی
+      limit: function(n) { limitNum = n; return api; },
+      single: function() { isSingle = true; return api; },
       then: function(resolve, reject) {
         var query = '?select=' + selectCols;
-        for (var i = 0; i < filters.length; i++) {
-          query += '&' + filters[i];
-        }
+        for (var i = 0; i < filters.length; i++) query += '&' + filters[i];
         if (orderCol) query += '&order=' + orderCol;
         if (limitNum) query += '&limit=' + limitNum;
 
@@ -298,23 +267,17 @@ var SB = {
 
   // ============ نوشتن در دیتابیس ============
   insert: function(table, data) {
-    var self = this;
     return this._request('/rest/v1/' + table, {
       method: 'POST',
       body: data,
-      headers: {
-        'Prefer': 'return=representation'
-      }
+      headers: { 'Prefer': 'return=representation' }
     }).then(function(res) {
-      if (!res.ok) {
-        throw new Error(res.data.message || 'خطا در ذخیره');
-      }
+      if (!res.ok) throw new Error(res.data.message || 'خطا در ذخیره');
       return res.data;
     });
   },
 
   update: function(table, data, filters) {
-    var self = this;
     var query = '';
     if (filters) {
       var parts = [];
@@ -326,9 +289,7 @@ var SB = {
     return this._request('/rest/v1/' + table + query, {
       method: 'PATCH',
       body: data,
-      headers: {
-        'Prefer': 'return=representation'
-      }
+      headers: { 'Prefer': 'return=representation' }
     }).then(function(res) {
       if (!res.ok) throw new Error(res.data.message || 'خطا در به‌روزرسانی');
       return res.data;
@@ -336,7 +297,6 @@ var SB = {
   },
 
   delete: function(table, filters) {
-    var self = this;
     var query = '';
     if (filters) {
       var parts = [];
