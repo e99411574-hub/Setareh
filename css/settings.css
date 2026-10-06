@@ -1,401 +1,520 @@
-/* ===== settings.css - استایل صفحهٔ تنظیمات ===== */
+/* ===== css/settings.css — تنظیمات شیشه‌ای ===== */
 
+/* پس‌زمینه گرادیانت رنگارنگ */
 .settings-page {
-  padding-bottom: 20px;
+  padding: 16px;
+  max-width: 620px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
 }
 
-/* ---------- نوار بالا ---------- */
+.settings-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(108, 92, 231, 0.35), transparent 45%),
+    radial-gradient(circle at 85% 15%, rgba(9, 132, 227, 0.3), transparent 40%),
+    radial-gradient(circle at 20% 85%, rgba(253, 203, 110, 0.25), transparent 45%),
+    radial-gradient(circle at 80% 90%, rgba(232, 67, 147, 0.22), transparent 45%);
+  background-color: var(--bg1, #f0e8f8);
+  pointer-events: none;
+}
+
+/* ============ نوار بالا ============ */
 .settings-topbar {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 4px 18px;
-  animation: slideInUp 0.4s ease;
+  margin-bottom: 20px;
 }
 
-.back-btn {
-  width: 44px;
-  height: 44px;
+.settings-topbar .back-btn {
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background: var(--card);
-  border: 1px solid var(--card-b);
-  color: var(--text);
+  border: none;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: #6C5CE7;
   font-size: 22px;
+  font-weight: bold;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--sd2);
-  transition: transform 0.2s ease;
-  font-weight: 300;
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: transform 0.15s ease;
 }
 
-.back-btn:active {
-  transform: scale(0.9);
+.settings-topbar .back-btn:active {
+  transform: scale(0.92);
 }
 
 .settings-title {
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 800;
-  flex: 1;
-  text-align: right;
-  padding-left: 8px;
-  color: var(--text);
+  color: #2d1b4e;
+  letter-spacing: -0.3px;
 }
 
-/* ---------- بخش ---------- */
-.settings-section {
-  background: var(--card);
-  border: 1px solid var(--card-b);
-  border-radius: 22px;
-  overflow: hidden;
+/* ============ کارت شیشه‌ای ============ */
+.glass-card {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 24px;
+  padding: 8px 4px;
   margin-bottom: 16px;
-  box-shadow: var(--sd2);
-  animation: slideInUp 0.5s ease both;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 8px 32px rgba(31, 38, 135, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  position: relative;
 }
 
-.settings-section:nth-child(2) { animation-delay: 0.05s; }
-.settings-section:nth-child(3) { animation-delay: 0.1s; }
-.settings-section:nth-child(4) { animation-delay: 0.15s; }
-.settings-section:nth-child(5) { animation-delay: 0.2s; }
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+}
 
-.settings-label {
-  padding: 16px 18px 8px;
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--text3);
+/* تیتر کارت */
+.glass-title {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  padding: 14px 18px 8px;
+  font-weight: 800;
+  font-size: 14px;
+  color: #4a3a6b;
+  letter-spacing: -0.2px;
+  opacity: 0.75;
+  text-transform: uppercase;
 }
 
-/* ---------- آیتم ---------- */
-.settings-item {
+.glass-title .emoji {
+  font-size: 18px;
+  filter: drop-shadow(0 2px 4px rgba(108, 92, 231, 0.3));
+}
+
+/* ============ ردیف ============ */
+.glass-row {
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 16px 18px;
   cursor: pointer;
-  border-top: 1px solid var(--card-b);
   transition: background 0.15s ease;
+  position: relative;
 }
 
-.settings-item:active {
-  background: var(--pr-soft);
+.glass-row:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 56px;
+  right: 18px;
+  height: 1px;
+  background: rgba(108, 92, 231, 0.1);
 }
 
-.settings-item .item-icon {
-  font-size: 22px;
-  width: 30px;
-  text-align: center;
+.glass-row:active {
+  background: rgba(108, 92, 231, 0.08);
+}
+
+.glass-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
   flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.15), rgba(9, 132, 227, 0.15));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
-.settings-item .item-text {
+.glass-label {
   flex: 1;
   font-size: 15px;
   font-weight: 700;
-  color: var(--text);
+  color: #2d1b4e;
 }
 
-.settings-item .item-value {
-  font-size: 13px;
-  color: var(--text3);
-  margin-inline-end: 4px;
-  font-weight: 600;
+.glass-sub {
+  font-size: 12px;
+  color: #6b5b8b;
+  margin-top: 2px;
+  font-weight: 500;
+  opacity: 0.75;
 }
 
-/* ---------- سوییچ ---------- */
-.switch {
-  width: 50px;
-  height: 28px;
-  border-radius: 14px;
-  background: var(--card2);
-  border: 1px solid var(--card-b);
-  position: relative;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
-.switch::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--text3);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.switch.on {
-  background: linear-gradient(135deg, var(--pr), var(--pr2));
-  border-color: transparent;
-}
-
-.switch.on::after {
-  right: calc(100% - 24px);
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-
-/* ---------- انتخاب زبان (دکمه‌های کوچیک) ---------- */
-.lang-picker {
-  display: flex;
-  gap: 8px;
-  padding: 0 18px 14px;
-}
-
-.lang-btn {
-  flex: 1;
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 2px solid var(--card-b);
-  background: var(--card2);
-  color: var(--text);
-  font-family: inherit;
+.glass-value {
   font-size: 14px;
+  color: #6C5CE7;
   font-weight: 700;
+  opacity: 0.9;
+}
+
+/* ============ سوئیچ iOS ============ */
+.ios-switch {
+  width: 52px;
+  height: 32px;
+  border-radius: 16px;
+  background: rgba(120, 120, 128, 0.2);
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ios-switch.on {
+  background: linear-gradient(135deg, #6C5CE7, #0984E3);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 20px rgba(108, 92, 231, 0.4);
+}
+
+.ios-switch .knob {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.ios-switch.on .knob {
+  left: 23px;
+}
+
+/* ============ انتخاب زبان ============ */
+.lang-segmented {
+  display: flex;
+  gap: 6px;
+  margin: 4px 14px 14px;
+  padding: 4px;
+  background: rgba(108, 92, 231, 0.1);
+  border-radius: 14px;
+  position: relative;
+}
+
+.lang-seg-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: transparent;
+  color: #6C5CE7;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.lang-btn:active {
-  transform: scale(0.95);
+.lang-seg-btn.active {
+  background: linear-gradient(135deg, #6C5CE7, #0984E3);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.35);
 }
 
-.lang-btn.active {
-  background: linear-gradient(135deg, var(--pr), var(--pr2));
-  color: white;
-  border-color: transparent;
-  box-shadow: 0 4px 14px var(--pr-soft);
-}
-
-/* ---------- گرید تم ---------- */
-.theme-grid {
+/* ============ گرید تم‌ها ============ */
+.theme-shine-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
-  padding: 8px 18px 18px;
+  padding: 8px 14px 18px;
 }
 
-.theme-opt {
+.theme-shine {
   aspect-ratio: 1;
   border-radius: 18px;
-  border: 3px solid transparent;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
-  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding-bottom: 6px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  padding: 6px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.6);
 }
 
-.theme-opt:active {
-  transform: scale(0.9);
+.theme-shine::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.4), transparent);
+  transform: rotate(-25deg);
+  pointer-events: none;
 }
 
-.theme-opt.active {
-  border-color: var(--pr);
-  box-shadow: 0 0 0 3px var(--pr-soft), 0 0 24px rgba(139, 92, 246, 0.4);
-  animation: pulseSoft 2s ease-in-out infinite;
+.theme-shine:active {
+  transform: scale(0.94);
 }
 
-.theme-opt .theme-name {
+.theme-shine.active {
+  box-shadow:
+    0 8px 24px rgba(108, 92, 231, 0.5),
+    0 0 0 3px #FDCB6E,
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transform: scale(1.04);
+}
+
+.theme-shine .tname {
   font-size: 10px;
   font-weight: 800;
-  color: white;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
-  position: relative;
-  z-index: 2;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  z-index: 1;
+  letter-spacing: -0.2px;
 }
 
-.theme-opt .check-badge {
+.theme-shine .check-badge {
   position: absolute;
   top: 6px;
   right: 6px;
-  background: white;
-  color: var(--pr);
   width: 22px;
   height: 22px;
   border-radius: 50%;
+  background: #fff;
+  color: #6C5CE7;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
   font-weight: 900;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  z-index: 3;
-  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ---------- دکمه ساخت تم سفارشی ---------- */
-.custom-theme-btn {
-  margin: 0 18px 18px;
-  padding: 14px;
-  background: linear-gradient(135deg, var(--pr), var(--pr2));
-  color: white;
-  border: none;
-  border-radius: 16px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-  width: calc(100% - 36px);
+@keyframes popIn {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+
+/* ============ دکمهٔ تم سفارشی ============ */
+.glass-btn-primary {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 6px 20px var(--pr-soft);
-  transition: transform 0.2s ease;
-}
-
-.custom-theme-btn:active {
-  transform: scale(0.96);
-}
-
-/* ---------- سازندهٔ تم سفارشی ---------- */
-.theme-builder {
-  padding: 18px;
-  border-top: 1px solid var(--card-b);
-  animation: slideInDown 0.35s ease;
-}
-
-.builder-title {
+  width: calc(100% - 28px);
+  margin: 0 14px 14px;
+  padding: 14px;
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
   font-weight: 800;
-  font-size: 15px;
-  margin-bottom: 12px;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.builder-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 0;
-  gap: 12px;
-  border-bottom: 1px solid var(--card-b);
-}
-
-.builder-row:last-of-type {
-  border-bottom: none;
-}
-
-.builder-label {
   font-size: 14px;
-  font-weight: 700;
-  flex: 1;
-  color: var(--text);
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, #FDCB6E, #E67E22);
+  box-shadow:
+    0 8px 24px rgba(230, 126, 34, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: transform 0.15s ease;
+  letter-spacing: -0.2px;
 }
 
-.color-picker {
-  width: 54px;
-  height: 40px;
-  border-radius: 12px;
-  border: 2px solid var(--card-b);
+.glass-btn-primary:active {
+  transform: scale(0.97);
+}
+
+/* ============ دکمهٔ خطر ============ */
+.glass-row.danger .glass-label {
+  color: #e74c3c;
+}
+
+.glass-row.danger .glass-icon {
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.2), rgba(231, 76, 60, 0.1));
+}
+
+/* ============ سازنده تم ============ */
+.theme-builder-glass {
+  padding: 12px 14px 18px;
+}
+
+.builder-preview-glass {
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 14px;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: all 0.2s ease;
+}
+
+.builder-preview-glass .p-title {
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.builder-preview-glass .p-sub {
+  font-size: 12px;
+  margin-top: 4px;
+  opacity: 0.9;
+}
+
+.color-row-glass {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.color-row-glass .lbl {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2d1b4e;
+}
+
+.color-row-glass input[type="color"] {
+  width: 46px;
+  height: 34px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  background: transparent;
   cursor: pointer;
   padding: 0;
-  background: transparent;
-  transition: transform 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.color-picker:active {
-  transform: scale(0.9);
-}
-
-.color-picker::-webkit-color-swatch-wrapper {
-  padding: 2px;
-}
-
-.color-picker::-webkit-color-swatch {
-  border: none;
-  border-radius: 9px;
-}
-
-.builder-preview {
-  height: 80px;
-  border-radius: 16px;
-  margin: 14px 0;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  border: 2px solid var(--card-b);
-  transition: all 0.3s ease;
-}
-
-.builder-preview .p-title {
-  font-size: 16px;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.builder-preview .p-sub {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.builder-actions {
+.builder-actions-glass {
   display: flex;
   gap: 10px;
   margin-top: 14px;
 }
 
-.builder-actions button {
+.builder-actions-glass button {
   flex: 1;
-  padding: 13px;
+  padding: 12px;
   border: none;
   border-radius: 14px;
   font-family: inherit;
-  font-size: 14px;
   font-weight: 800;
+  font-size: 14px;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: transform 0.15s ease;
 }
 
-.builder-actions button:active {
-  transform: scale(0.95);
+.builder-actions-glass .cancel {
+  background: rgba(255, 255, 255, 0.6);
+  color: #6b5b8b;
+  backdrop-filter: blur(10px);
 }
 
-.builder-save {
-  background: linear-gradient(135deg, var(--pr), var(--pr2));
-  color: white;
-  box-shadow: 0 6px 20px var(--pr-soft);
+.builder-actions-glass .save {
+  flex: 2;
+  background: linear-gradient(135deg, #6C5CE7, #0984E3);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(108, 92, 231, 0.4);
 }
 
-.builder-cancel {
-  background: var(--card2);
-  color: var(--text2);
-  border: 1px solid var(--card-b) !important;
+.builder-actions-glass button:active {
+  transform: scale(0.96);
 }
 
-/* ---------- آیتم خطرناک ---------- */
-.settings-item.danger .item-text {
-  color: #E84393;
-}
-
-/* ---------- درباره ---------- */
-.settings-about {
+/* ============ درباره ============ */
+.about-glass {
   text-align: center;
-  padding: 24px 18px;
-  color: var(--text3);
-  font-size: 12px;
-  line-height: 2;
+  padding: 28px 20px;
+  color: #6b5b8b;
 }
 
-.settings-about .logo {
-  font-size: 32px;
-  margin-bottom: 8px;
-  animation: float 3s ease-in-out infinite;
+.about-glass .logo-glass {
+  font-size: 52px;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 4px 12px rgba(253, 203, 110, 0.5));
+  animation: floatStar 3s ease-in-out infinite;
+}
+
+@keyframes floatStar {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-6px) rotate(8deg); }
+}
+
+.about-glass .app-name {
+  font-weight: 900;
+  font-size: 17px;
+  color: #2d1b4e;
+  letter-spacing: -0.3px;
+}
+
+.about-glass .version {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.about-glass .tagline {
+  font-size: 12px;
+  margin-top: 10px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+/* ============ حالت شب ============ */
+body[data-dark="true"] .settings-page::before {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(108, 92, 231, 0.4), transparent 45%),
+    radial-gradient(circle at 85% 15%, rgba(9, 132, 227, 0.35), transparent 40%),
+    radial-gradient(circle at 20% 85%, rgba(253, 203, 110, 0.2), transparent 45%),
+    radial-gradient(circle at 80% 90%, rgba(232, 67, 147, 0.2), transparent 45%);
+  background-color: #1a1230;
+}
+
+body[data-dark="true"] .settings-title,
+body[data-dark="true"] .glass-label,
+body[data-dark="true"] .about-glass .app-name {
+  color: #f0e8ff;
+}
+
+body[data-dark="true"] .glass-sub,
+body[data-dark="true"] .about-glass,
+body[data-dark="true"] .glass-value {
+  color: #b8a8d8;
+}
+
+body[data-dark="true"] .glass-card {
+  background: rgba(42, 33, 69, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+body[data-dark="true"] .glass-title {
+  color: #b8a8d8;
+}
+
+body[data-dark="true"] .glass-icon {
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.3), rgba(9, 132, 227, 0.3));
+}
+
+body[data-dark="true"] .lang-segmented {
+  background: rgba(108, 92, 231, 0.2);
+}
+
+body[data-dark="true"] .settings-topbar .back-btn {
+  background: rgba(42, 33, 69, 0.6);
+  color: #b8a8d8;
   }
