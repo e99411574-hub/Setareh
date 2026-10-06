@@ -12,14 +12,12 @@ var PROFILE = {
   _tickMode: false,
   _nameMode: false,
   _bioMode: false,
-  _usernameMode: false,
 
   goSettings: function() { ROUTER.go('settings'); },
 
   editName: function() {
     this._nameMode = true;
     this._bioMode = false;
-    this._usernameMode = false;
     this.refresh();
     setTimeout(function() {
       var i = document.getElementById('pNameInput');
@@ -54,7 +52,6 @@ var PROFILE = {
   editBio: function() {
     this._bioMode = true;
     this._nameMode = false;
-    this._usernameMode = false;
     this.refresh();
     setTimeout(function() {
       var i = document.getElementById('pBioInput');
@@ -81,48 +78,9 @@ var PROFILE = {
     if (typeof showToast === 'function') showToast('✅ ' + t('bioSaved'));
   },
 
-  editUsername: function() {
-    this._usernameMode = true;
-    this._nameMode = false;
-    this._bioMode = false;
-    this.refresh();
-    setTimeout(function() {
-      var i = document.getElementById('pUsernameInput');
-      if (i) i.focus();
-    }, 100);
-  },
-
-  cancelUsername: function() {
-    this._usernameMode = false;
-    this.refresh();
-  },
-
-  saveUsername: async function() {
-    var input = document.getElementById('pUsernameInput');
-    if (!input) return;
-    var uname = input.value.trim();
-    if (!uname) {
-      if (typeof playSnd === 'function') playSnd('error');
-      if (typeof showToast === 'function') showToast('❌ نام کاربری رو وارد کن');
-      return;
-    }
-    if (typeof showToast === 'function') showToast('⏳ در حال ذخیره...');
-    var res = await AUTH.updateUsername(uname);
-    if (res.ok) {
-      this._usernameMode = false;
-      this.refresh();
-      if (typeof playSnd === 'function') playSnd('success');
-      if (typeof showToast === 'function') showToast('✅ ذخیره شد: @' + res.username);
-    } else {
-      if (typeof playSnd === 'function') playSnd('error');
-      if (typeof showToast === 'function') showToast('❌ ' + res.error);
-    }
-  },
-
   toggleAvatarMode: function() {
     this._avatarMode = !this._avatarMode;
     this._tickMode = false;
-    this._usernameMode = false;
     if (typeof playSnd === 'function') playSnd('tap');
     this.refresh();
   },
@@ -163,7 +121,6 @@ var PROFILE = {
   toggleTickMode: function() {
     this._tickMode = !this._tickMode;
     this._avatarMode = false;
-    this._usernameMode = false;
     if (typeof playSnd === 'function') playSnd('tap');
     this.refresh();
   },
@@ -213,8 +170,6 @@ var PROFILE = {
 
     if (username) {
       html += '<div class="hero-username" dir="ltr" style="font-size:13px;color:#6C5CE7;font-weight:600;margin-top:4px;text-align:center;">@' + escapeHtml(username) + '</div>';
-    } else if (sbUser) {
-      html += '<div class="hero-username" style="font-size:13px;color:#b2bec3;margin-top:4px;text-align:center;">بدون نام کاربری</div>';
     }
 
     html += '<div class="hero-bio">' + escapeHtml(u.bio || t('noBio')) + '</div>';
@@ -252,18 +207,6 @@ var PROFILE = {
       html += '</div></div>';
     }
 
-    if (this._usernameMode) {
-      html += '<div class="profile-list" style="padding:14px;">';
-      html += '<div style="font-size:13px;color:#636e72;margin-bottom:8px;">نام کاربری (فقط حرف، عدد و _)</div>';
-      html += '<div class="profile-input-row" style="display:flex;gap:8px;align-items:center;">';
-      html += '<span style="color:#6C5CE7;font-weight:bold;">@</span>';
-      html += '<input id="pUsernameInput" type="text" maxlength="20" placeholder="username" value="' + escapeHtml(username || '') + '" dir="ltr" style="flex:1;">';
-      html += '<button class="btn-save" onclick="PROFILE.saveUsername()">✓</button>';
-      html += '<button class="btn-cancel" onclick="PROFILE.cancelUsername()">✕</button>';
-      html += '</div>';
-      html += '</div>';
-    }
-
     if (this._avatarMode) {
       html += '<div class="profile-list"><div class="avatar-picker">';
       html += '<div class="avatar-opt ' + (u.avatar === 'male' ? 'active' : '') + '" onclick="PROFILE.setAvatar(\'male\')">👨</div>';
@@ -289,12 +232,11 @@ var PROFILE = {
 
     html += '<div class="profile-list">';
 
-    if (sbUser) {
-      html += '<div class="profile-item" onclick="PROFILE.editUsername()">';
+    if (sbUser && username) {
+      html += '<div class="profile-item" style="opacity:.8;">';
       html += '<span class="item-icon">🆔</span>';
       html += '<span class="item-text">نام کاربری</span>';
-      html += '<span class="item-value" dir="ltr" style="display:inline-block;">' + (username ? '@' + escapeHtml(username) : 'تنظیم کن') + '</span>';
-      html += '<span class="item-chevron">‹</span>';
+      html += '<span class="item-value" dir="ltr" style="display:inline-block;">@' + escapeHtml(username) + '</span>';
       html += '</div>';
     }
 
@@ -353,12 +295,23 @@ var PROFILE = {
   refresh: async function() {
     await this.loadSbUserData();
 
+    var wasTickMode = this._tickMode;
+
     var c = document.getElementById('profileContent');
     if (c) {
       c.innerHTML = this.render();
       c.classList.remove('anim-fade-in');
       void c.offsetWidth;
       c.classList.add('anim-fade-in');
+    }
+
+    if (wasTickMode) {
+      setTimeout(function() {
+        var picker = document.querySelector('.tick-picker');
+        if (picker) {
+          picker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 80);
     }
 
     if (typeof AUTH !== 'undefined' && AUTH.renderStatusCard) {
