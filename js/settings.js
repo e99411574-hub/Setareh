@@ -1,4 +1,4 @@
-// ===== js/settings.js — تنظیمات ستاره =====
+// ===== js/settings.js — تنظیمات شیشه‌ای ستاره =====
 
 var SETTINGS = {
   _customMode: false,
@@ -18,50 +18,7 @@ var SETTINGS = {
     { id: 'theme_dark',   name: 'تیره',    c1: '#2d2045', c2: '#a78bfa' }
   ],
 
-  // استایل حالت شب
-  _darkCSS: `
-    body[data-dark="true"] { background: linear-gradient(160deg, #1a1230 0%, #0f0820 100%) !important; color: #e8e0f5 !important; }
-    body[data-dark="true"] .top-bar { background: #1f1a35 !important; }
-    body[data-dark="true"] .nav { background: #1f1a35 !important; }
-    body[data-dark="true"] .nav-btn { color: #a89bc0 !important; }
-    body[data-dark="true"] .card, body[data-dark="true"] .user-card,
-    body[data-dark="true"] .profile-list, body[data-dark="true"] .profile-hero,
-    body[data-dark="true"] .profile-quick, body[data-dark="true"] .poem-card,
-    body[data-dark="true"] .welcome-card, body[data-dark="true"] .stat-cell,
-    body[data-dark="true"] .profile-item, body[data-dark="true"] .settings-card,
-    body[data-dark="true"] .chat-tabs, body[data-dark="true"] .chat-msg-other,
-    body[data-dark="true"] .menu-item, body[data-dark="true"] .side-menu,
-    body[data-dark="true"] .mission-card, body[data-dark="true"] .user-menu-box {
-      background: #2a2145 !important; color: #e8e0f5 !important;
-    }
-    body[data-dark="true"] .hero-name, body[data-dark="true"] .item-text,
-    body[data-dark="true"] .user-card-name, body[data-dark="true"] .stat-num,
-    body[data-dark="true"] .chat-msg-other, body[data-dark="true"] .menu-name,
-    body[data-dark="true"] .sec-title, body[data-dark="true"] .welcome-title {
-      color: #e8e0f5 !important;
-    }
-    body[data-dark="true"] .item-value, body[data-dark="true"] .hero-bio,
-    body[data-dark="true"] .user-card-bio, body[data-dark="true"] .stat-lbl,
-    body[data-dark="true"] .menu-footer {
-      color: #a89bc0 !important;
-    }
-    body[data-dark="true"] .chat-room { background: #1a1230 !important; }
-    body[data-dark="true"] .chat-room-messages { background: #1a1230 !important; }
-    body[data-dark="true"] .chat-room-input { background: #2a2145 !important; }
-    body[data-dark="true"] .chat-room-input input { background: #1f1a35 !important; color: #e8e0f5 !important; border-color: #3a2e5c !important; }
-  `,
-
-  _ensureDarkCSS: function() {
-    if (document.getElementById('darkModeStyles')) return;
-    var style = document.createElement('style');
-    style.id = 'darkModeStyles';
-    style.textContent = this._darkCSS;
-    document.head.appendChild(style);
-  },
-
-  back: function() {
-    ROUTER.go('profile');
-  },
+  back: function() { ROUTER.go('profile'); },
 
   setLang: function(lang) {
     STATE.set('settings.lang', lang);
@@ -183,10 +140,8 @@ var SETTINGS = {
     }
   },
 
-  _toggleSwitch: function(on) {
-    return '<div style="width:48px;height:28px;border-radius:14px;background:' + (on ? '#6C5CE7' : '#e0e0e5') + ';position:relative;transition:background .2s;flex-shrink:0;">' +
-      '<div style="width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:3px;' + (on ? 'left:23px;' : 'left:3px;') + 'transition:left .2s;box-shadow:0 2px 4px rgba(0,0,0,.2);"></div>' +
-      '</div>';
+  _switch: function(on) {
+    return '<div class="ios-switch ' + (on ? 'on' : '') + '"><div class="knob"></div></div>';
   },
 
   render: function() {
@@ -197,82 +152,77 @@ var SETTINGS = {
     var vibrateOn = s.vibrate !== false;
     var lang = s.lang || 'fa';
 
-    var html = '<div style="padding:16px;max-width:600px;margin:0 auto;">';
+    var html = '<div class="settings-page">';
 
-    // Header
-    html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">';
-    html += '<button onclick="SETTINGS.back()" style="width:40px;height:40px;border-radius:50%;border:none;background:rgba(108,92,231,.15);color:#6C5CE7;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:bold;">‹</button>';
-    html += '<div style="font-weight:800;font-size:18px;">⚙️ تنظیمات</div>';
+    // ========== نوار بالا ==========
+    html += '<div class="settings-topbar">';
+    html += '<button class="back-btn" onclick="SETTINGS.back()">‹</button>';
+    html += '<div class="settings-title">⚙️ تنظیمات</div>';
     html += '</div>';
 
-    // Card: Language
-    html += '<div style="background:#fff;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.05);">';
-    html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">';
-    html += '<span style="font-size:22px;">🌍</span>';
-    html += '<span style="font-weight:700;">زبان</span>';
-    html += '</div>';
-    html += '<div style="display:flex;gap:6px;background:rgba(108,92,231,.1);padding:4px;border-radius:12px;">';
-    html += '<button onclick="SETTINGS.setLang(\'fa\')" style="flex:1;padding:10px;border:none;border-radius:10px;font-family:inherit;font-weight:bold;cursor:pointer;font-size:14px;' + (lang==='fa' ? 'background:linear-gradient(135deg,#6C5CE7,#0984E3);color:#fff;' : 'background:transparent;color:#6C5CE7;') + '">فارسی</button>';
-    html += '<button onclick="SETTINGS.setLang(\'en\')" style="flex:1;padding:10px;border:none;border-radius:10px;font-family:inherit;font-weight:bold;cursor:pointer;font-size:14px;' + (lang==='en' ? 'background:linear-gradient(135deg,#6C5CE7,#0984E3);color:#fff;' : 'background:transparent;color:#6C5CE7;') + '">English</button>';
+    // ========== کارت زبان ==========
+    html += '<div class="glass-card">';
+    html += '<div class="glass-title"><span class="emoji">🌍</span>زبان</div>';
+    html += '<div class="lang-segmented">';
+    html += '<button class="lang-seg-btn ' + (lang === 'fa' ? 'active' : '') + '" onclick="SETTINGS.setLang(\'fa\')">فارسی</button>';
+    html += '<button class="lang-seg-btn ' + (lang === 'en' ? 'active' : '') + '" onclick="SETTINGS.setLang(\'en\')">English</button>';
     html += '</div>';
     html += '</div>';
 
-    // Card: Toggles
-    html += '<div style="background:#fff;border-radius:18px;padding:4px 16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.05);">';
+    // ========== کارت تنظیمات عمومی ==========
+    html += '<div class="glass-card">';
+    html += '<div class="glass-title"><span class="emoji">🎛</span>تنظیمات</div>';
 
-    // Dark mode
-    html += '<div onclick="SETTINGS.toggleDark()" style="display:flex;align-items:center;gap:14px;padding:14px 0;cursor:pointer;border-bottom:1px solid #f0f0f5;">';
-    html += '<span style="font-size:22px;">🌙</span>';
-    html += '<span style="font-weight:700;flex:1;">حالت شب</span>';
-    html += this._toggleSwitch(darkOn);
+    // حالت شب
+    html += '<div class="glass-row" onclick="SETTINGS.toggleDark()">';
+    html += '<div class="glass-icon">🌙</div>';
+    html += '<div class="glass-label">حالت شب<div class="glass-sub">تیره شدن کل اپ</div></div>';
+    html += this._switch(darkOn);
     html += '</div>';
 
-    // Sound
-    html += '<div onclick="SETTINGS.toggleSound()" style="display:flex;align-items:center;gap:14px;padding:14px 0;cursor:pointer;border-bottom:1px solid #f0f0f5;">';
-    html += '<span style="font-size:22px;">' + (soundOn ? '🔊' : '🔇') + '</span>';
-    html += '<span style="font-weight:700;flex:1;">صدا</span>';
-    html += this._toggleSwitch(soundOn);
+    // صدا
+    html += '<div class="glass-row" onclick="SETTINGS.toggleSound()">';
+    html += '<div class="glass-icon">' + (soundOn ? '🔊' : '🔇') + '</div>';
+    html += '<div class="glass-label">صدا<div class="glass-sub">افکت‌های صوتی</div></div>';
+    html += this._switch(soundOn);
     html += '</div>';
 
-    // Vibrate
-    html += '<div onclick="SETTINGS.toggleVibrate()" style="display:flex;align-items:center;gap:14px;padding:14px 0;cursor:pointer;">';
-    html += '<span style="font-size:22px;">📳</span>';
-    html += '<span style="font-weight:700;flex:1;">لرزش</span>';
-    html += this._toggleSwitch(vibrateOn);
+    // لرزش
+    html += '<div class="glass-row" onclick="SETTINGS.toggleVibrate()">';
+    html += '<div class="glass-icon">📳</div>';
+    html += '<div class="glass-label">لرزش<div class="glass-sub">ویبره هنگام لمس</div></div>';
+    html += this._switch(vibrateOn);
     html += '</div>';
 
     html += '</div>';
 
-    // Card: Themes
-    html += '<div style="background:#fff;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.05);">';
-    html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">';
-    html += '<span style="font-size:22px;">🎨</span>';
-    html += '<span style="font-weight:700;">تم‌ها</span>';
-    html += '</div>';
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">';
+    // ========== کارت تم‌ها ==========
+    html += '<div class="glass-card">';
+    html += '<div class="glass-title"><span class="emoji">🎨</span>تم‌ها</div>';
+    html += '<div class="theme-shine-grid">';
 
     for (var i = 0; i < this.themes.length; i++) {
       var th = this.themes[i];
       var active = (currentTheme === th.id);
-      html += '<div onclick="SETTINGS.applyTheme(\'' + th.id + '\')" style="cursor:pointer;position:relative;aspect-ratio:1;border-radius:14px;background:linear-gradient(135deg,' + th.c1 + ',' + th.c2 + ');display:flex;align-items:flex-end;justify-content:center;padding:6px;' + (active ? 'box-shadow:0 0 0 3px #FDCB6E;' : '') + '">';
-      html += '<span style="font-size:10px;color:#fff;font-weight:bold;text-shadow:0 1px 2px rgba(0,0,0,.4);">' + th.name + '</span>';
-      if (active) html += '<span style="position:absolute;top:4px;right:4px;background:#fff;color:#6C5CE7;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;">✓</span>';
+      html += '<div class="theme-shine' + (active ? ' active' : '') + '" style="background:linear-gradient(135deg,' + th.c1 + ',' + th.c2 + ')" onclick="SETTINGS.applyTheme(\'' + th.id + '\')">';
+      html += '<span class="tname">' + th.name + '</span>';
+      if (active) html += '<span class="check-badge">✓</span>';
       html += '</div>';
     }
 
     var custom = STATE.get('settings.customTheme');
     if (custom) {
       var cActive = (currentTheme === 'theme_custom');
-      html += '<div onclick="SETTINGS.applyCustomExisting()" style="cursor:pointer;position:relative;aspect-ratio:1;border-radius:14px;background:linear-gradient(135deg,' + custom.bg1 + ',' + custom.bg2 + ');display:flex;align-items:flex-end;justify-content:center;padding:6px;' + (cActive ? 'box-shadow:0 0 0 3px #FDCB6E;' : '') + '">';
-      html += '<span style="font-size:10px;color:#fff;font-weight:bold;">سفارشی</span>';
-      if (cActive) html += '<span style="position:absolute;top:4px;right:4px;background:#fff;color:#6C5CE7;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;">✓</span>';
+      html += '<div class="theme-shine' + (cActive ? ' active' : '') + '" style="background:linear-gradient(135deg,' + custom.bg1 + ',' + custom.bg2 + ')" onclick="SETTINGS.applyCustomExisting()">';
+      html += '<span class="tname">سفارشی</span>';
+      if (cActive) html += '<span class="check-badge">✓</span>';
       html += '</div>';
     }
 
     html += '</div>';
 
     if (!this._customMode) {
-      html += '<button onclick="SETTINGS.openCustomBuilder()" style="width:100%;margin-top:14px;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#FDCB6E,#E67E22);color:#fff;font-family:inherit;font-weight:bold;font-size:14px;cursor:pointer;">🎨 ساخت تم سفارشی</button>';
+      html += '<button class="glass-btn-primary" onclick="SETTINGS.openCustomBuilder()">✨ ساخت تم سفارشی</button>';
     }
 
     if (this._customMode) {
@@ -281,21 +231,21 @@ var SETTINGS = {
 
     html += '</div>';
 
-    // Card: Reset
-    html += '<div style="background:#fff;border-radius:18px;padding:4px 16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.05);">';
-    html += '<div onclick="SETTINGS.confirmReset()" style="display:flex;align-items:center;gap:14px;padding:14px 0;cursor:pointer;">';
-    html += '<span style="font-size:22px;">🗑️</span>';
-    html += '<span style="font-weight:700;flex:1;color:#e74c3c;">پاک کردن همهٔ داده‌ها</span>';
-    html += '<span style="color:#e74c3c;font-size:22px;">›</span>';
+    // ========== کارت خطر ==========
+    html += '<div class="glass-card">';
+    html += '<div class="glass-row danger" onclick="SETTINGS.confirmReset()">';
+    html += '<div class="glass-icon">🗑️</div>';
+    html += '<div class="glass-label">پاک کردن همهٔ داده‌ها<div class="glass-sub">غیرقابل بازگشت</div></div>';
+    html += '<span style="color:#e74c3c;font-size:22px;font-weight:300;">›</span>';
     html += '</div>';
     html += '</div>';
 
-    // About
-    html += '<div style="text-align:center;padding:24px 0;">';
-    html += '<div style="font-size:44px;margin-bottom:8px;">⭐</div>';
-    html += '<div style="font-weight:800;font-size:16px;">ستاره</div>';
-    html += '<div style="opacity:.5;font-size:12px;margin-top:4px;">نسخه ۲.۰</div>';
-    html += '<div style="font-size:12px;opacity:.7;margin-top:8px;">بازی کن، بساز، بدرخش ✨</div>';
+    // ========== درباره ==========
+    html += '<div class="about-glass">';
+    html += '<div class="logo-glass">⭐</div>';
+    html += '<div class="app-name">ستاره</div>';
+    html += '<div class="version">نسخه ۲.۰</div>';
+    html += '<div class="tagline">بازی کن، بساز، بدرخش ✨</div>';
     html += '</div>';
 
     html += '</div>';
@@ -304,23 +254,21 @@ var SETTINGS = {
 
   _renderBuilder: function() {
     var c = this._customColors;
-    var html = '<div style="margin-top:14px;padding:14px;background:#f8f9fd;border-radius:14px;">';
-    html += '<div style="font-weight:bold;margin-bottom:10px;color:#6C5CE7;">🎨 تم خودت رو بساز</div>';
-
-    html += '<div id="builderPreview" style="padding:16px;border-radius:12px;margin-bottom:12px;text-align:center;background:linear-gradient(135deg,' + c.bg1 + ',' + c.bg2 + ');color:' + c.text + '">';
-    html += '<div style="color:' + c.pr + ';font-weight:bold;">⭐ ستاره</div>';
-    html += '<div style="color:' + c.gold + ';font-size:12px;margin-top:4px;">بازی کن، بساز، بدرخش</div>';
+    var html = '<div class="theme-builder-glass">';
+    html += '<div id="builderPreview" class="builder-preview-glass" style="background:linear-gradient(135deg,' + c.bg1 + ',' + c.bg2 + ');color:' + c.text + '">';
+    html += '<div class="p-title" style="color:' + c.pr + '">⭐ ستاره</div>';
+    html += '<div class="p-sub" style="color:' + c.gold + '">بازی کن، بساز، بدرخش</div>';
     html += '</div>';
 
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;"><span style="flex:1;font-size:13px;">🎨 رنگ اصلی</span><input type="color" value="' + c.bg1 + '" oninput="SETTINGS.updateCustomColor(\'bg1\', this.value)" style="width:44px;height:32px;border:none;border-radius:8px;cursor:pointer;"></div>';
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;"><span style="flex:1;font-size:13px;">🌈 رنگ دوم</span><input type="color" value="' + c.bg2 + '" oninput="SETTINGS.updateCustomColor(\'bg2\', this.value)" style="width:44px;height:32px;border:none;border-radius:8px;cursor:pointer;"></div>';
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;"><span style="flex:1;font-size:13px;">💜 دکمه‌ها</span><input type="color" value="' + c.pr + '" oninput="SETTINGS.updateCustomColor(\'pr\', this.value)" style="width:44px;height:32px;border:none;border-radius:8px;cursor:pointer;"></div>';
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;"><span style="flex:1;font-size:13px;">⭐ تأکیدی</span><input type="color" value="' + c.gold + '" oninput="SETTINGS.updateCustomColor(\'gold\', this.value)" style="width:44px;height:32px;border:none;border-radius:8px;cursor:pointer;"></div>';
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;"><span style="flex:1;font-size:13px;">📝 متن</span><input type="color" value="' + c.text + '" oninput="SETTINGS.updateCustomColor(\'text\', this.value)" style="width:44px;height:32px;border:none;border-radius:8px;cursor:pointer;"></div>';
+    html += '<div class="color-row-glass"><span class="lbl">🎨 رنگ اصلی</span><input type="color" value="' + c.bg1 + '" oninput="SETTINGS.updateCustomColor(\'bg1\', this.value)"></div>';
+    html += '<div class="color-row-glass"><span class="lbl">🌈 رنگ دوم</span><input type="color" value="' + c.bg2 + '" oninput="SETTINGS.updateCustomColor(\'bg2\', this.value)"></div>';
+    html += '<div class="color-row-glass"><span class="lbl">💜 دکمه‌ها</span><input type="color" value="' + c.pr + '" oninput="SETTINGS.updateCustomColor(\'pr\', this.value)"></div>';
+    html += '<div class="color-row-glass"><span class="lbl">⭐ تأکیدی</span><input type="color" value="' + c.gold + '" oninput="SETTINGS.updateCustomColor(\'gold\', this.value)"></div>';
+    html += '<div class="color-row-glass"><span class="lbl">📝 متن</span><input type="color" value="' + c.text + '" oninput="SETTINGS.updateCustomColor(\'text\', this.value)"></div>';
 
-    html += '<div style="display:flex;gap:8px;margin-top:12px;">';
-    html += '<button onclick="SETTINGS.closeCustomBuilder()" style="flex:1;padding:12px;border:none;border-radius:10px;background:#e0e0e5;color:#636e72;font-family:inherit;font-weight:bold;cursor:pointer;">لغو</button>';
-    html += '<button onclick="SETTINGS.saveCustomTheme()" style="flex:2;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#6C5CE7,#0984E3);color:#fff;font-family:inherit;font-weight:bold;cursor:pointer;">✓ ذخیره</button>';
+    html += '<div class="builder-actions-glass">';
+    html += '<button class="cancel" onclick="SETTINGS.closeCustomBuilder()">لغو</button>';
+    html += '<button class="save" onclick="SETTINGS.saveCustomTheme()">✓ ذخیره</button>';
     html += '</div>';
 
     html += '</div>';
@@ -331,6 +279,7 @@ var SETTINGS = {
     var c = document.getElementById('settingsContent');
     if (c) {
       c.innerHTML = this.render();
+      if (this._customMode) this._updatePreview();
       c.classList.remove('anim-fade-in');
       void c.offsetWidth;
       c.classList.add('anim-fade-in');
@@ -338,7 +287,6 @@ var SETTINGS = {
   },
 
   init: function() {
-    this._ensureDarkCSS();
     if (STATE.get('settings.dark') === true) {
       document.body.setAttribute('data-dark', 'true');
     }
