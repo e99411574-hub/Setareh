@@ -1,4 +1,4 @@
-// ===== js/chat.js — چت، دوستان، ویس، عکس =====
+// ===== js/chat.js — چت با تیک خوانده، تایپینگ، آنلاین =====
 
 function escapeHtml(s) {
   if (!s) return '';
@@ -14,11 +14,14 @@ const CHAT = (() => {
   let _currentRoom = null;
   let _messages = [];
   let _refreshTimer = null;
+  let _typingTimer = null;
+  let _typingCheckTimer = null;
   let _mediaRecorder = null;
   let _audioChunks = [];
   let _recordingStart = 0;
   let _currentAudio = null;
   let _currentBtn = null;
+  let _lastMsgId = 0;
 
   function init() {
     console.log('💬 CHAT: آماده');
@@ -89,6 +92,12 @@ const CHAT = (() => {
     }, 400);
   }
 
+  function isOnline(user) {
+    if (!user || !user.last_seen) return false;
+    const diff = Date.now() - new Date(user.last_seen).getTime();
+    return diff < 90000;
+  }
+
   function renderAvatar(user) {
     let inner;
     if (user.avatar === 'custom' && user.avatar_url) {
@@ -100,12 +109,6 @@ const CHAT = (() => {
     }
     const dot = isOnline(user) ? '<span class="online-dot"></span>' : '';
     return inner + dot;
-  }
-
-  function isOnline(user) {
-    if (!user || !user.last_seen) return false;
-    const diff = Date.now() - new Date(user.last_seen).getTime();
-    return diff < 90000;
   }
 
   function renderUserLabel(user) {
@@ -131,13 +134,21 @@ const CHAT = (() => {
       const friendIds = all.map(f => f.user_id === me.id ? f.friend_id : f.user_id);
       const uRes = await SB.from('users').select('*');
       const users = (uRes.data || []).filter(u => friendIds.includes(u.id));
+
+      // پبام‌های خونده‌نشده
+      const mRes = await SB.from('messages').select('*');
+      const unread = (mRes.data || []).filter(m =>
+        m.receiver_id === me.id && m.sender_id !== me.id && !m.read_at
+      );
+
       let html = '';
       users.forEach(u => {
         const f = all.find(x =>
           (x.user_id === me.id && x.friend_id === u.id) ||
           (x.friend_id === me.id && x.user_id === u.id)
         );
-        html += renderFriendCard(u, f);
+        const unreadCount = unread.filter(m => m.sender_id === u.id).length;
+        html += renderFriendCard(u, f, unreadCount);
       });
       box.innerHTML = html;
     } catch (err) {
@@ -146,10 +157,13 @@ const CHAT = (() => {
     }
   }
 
-  function renderFriendCard(user, friendship) {
+  function renderFriendCard(user, friendship, unreadCount) {
     const bio = escapeHtml(user.bio || 'بدون بیو');
     const avatar = renderAvatar(user);
     const label = renderUserLabel(user);
+    const unread = unreadCount > 0
+      ? `<span style="background:#e74c3c;color:#fff;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;min-width:20px;text-align:center;">${unreadCount}</span>`
+      : '';
     return `<div class="user-card" onclick="CHAT.openRoom('${user.id}')">
       <div class="user-card-avatar">${avatar}</div>
       <div class="user-card-info">
@@ -157,6 +171,7 @@ const CHAT = (() => {
         <div class="user-card-bio">${bio}</div>
       </div>
       <div class="user-card-action" onclick="event.stopPropagation()">
+        ${unread}
         <button class="btn-icon" onclick="CHAT.showUserMenu('${user.id}', '${friendship.id}')">⋮</button>
       </div>
     </div>`;
@@ -408,6 +423,7 @@ const CHAT = (() => {
     } catch (err) { console.warn('clearHistory error:', err); }
   }
 
+  // ============ باز کردن گفتگو ============
   async function openRoom(userId) {
     const me = SB.getUser();
     if (!me) return;
@@ -416,13 +432,23 @@ const CHAT = (() => {
     if (!user) return;
     _currentRoom = user;
     _messages = [];
+    _lastMsgId = 0;
+
+    const isOnlineUser = isOnline(user);
+    const statusText = isOnlineUser
+      ? '<span style="color:#00b894;font-size:11px;">● آنلاین</span>'
+      : '<span style="color:#b2bec3;font-size:11px;">آفلاین</span>';
+
     const room = document.createElement('div');
     room.className = 'chat-room';
     room.id = 'chatRoom';
     room.innerHTML = `
       <div class="chat-room-header">
         <button class="chat-room-back" onclick="CHAT.closeRoom()">‹</button>
-        <div class="chat-room-name">${escapeHtml(user.display_name || 'کاربر')}${user.is_verified ? ' ✓' : ''}${user.is_admin ? ' 👑' : ''}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="chat-room-name">${escapeHtml(user.display_name || 'کاربر')}${user.is_verified ? ' ✓' : ''}${user.is_admin ? ' 👑' : ''}</div>
+          <div style="margin-top:2px;" id="chatRoomStatus">${statusText}</div>
+        </div>
         <div class="chat-room-actions">
           <button type="button" class="chat-room-action" onclick="CHAT.giftClicked()" title="ارسال هدیه">💰</button>
           <button type="button" class="chat-room-action" onclick="CHAT.gameClicked()" title="بازی">🎮</button>
@@ -431,371 +457,503 @@ const CHAT = (() => {
       <div class="chat-room-messages" id="chatMessages">
         <div style="text-align:center;padding:20px;color:#b2bec3;font-size:13px;">در حال بارگذاری...</div>
       </div>
+      <div class="chat-typing" id="chatTyping" style="display:none;">
+        <span></span><span></span><span></span>
+      </div>
       <div class="chat-room-input" id="chatInputBar">
         <button class="chat-room-btn" onclick="document.getElementById('chatImageInput').click()">📷</button>
         <input type="file" id="chatImageInput" accept="image/*" style="display:none" onchange="CHAT.sendImage(event)">
-        <input type="text" id="chatTextInput" placeholder="پیام بنویس..." onkeydown="if(event.key==='Enter')CHAT.sendMessage()">
+        <input type="text" id="chatTextInput" placeholder="پیام بنویس..." oninput="CHAT.onTyping()" onkeydown="if(event.key==='Enter')CHAT.sendMessage()">
         <button class="chat-room-btn" onclick="CHAT.toggleRecord()" id="chatVoiceBtn">🎤</button>
         <button class="chat-room-btn chat-room-send" onclick="CHAT.sendMessage()">➤</button>
       </div>
     `;
     document.body.appendChild(room);
     loadMessages();
-    _refreshTimer = setInterval(loadMessages, 5000);
+    markAsRead();
+
+    _refreshTimer = setInterval(loadMessages, 3000);
+    _typingCheckTimer = setInterval(checkTypingStatus, 2000);
+
+    // آنلاین/آفلاین رو آپدیت کن
+    setTimeout(() => {
+      if (_currentRoom && _currentRoom.id === user.id) {
+        updateRoomStatus();
+      }
+    }, 5000);
   }
 
-  function giftClicked() {
-    try { showGiftMenu(); } catch(e) { showToast('❌ ' + e.message); }
-  }
-
-  function gameClicked() {
-    try { showGameMenu(); } catch(e) { showToast('❌ ' + e.message); }
-  }
-
-  function closeRoom() {
-    clearInterval(_refreshTimer);
-    _refreshTimer = null;
-    _currentRoom = null;
-    _messages = [];
-    if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; _currentBtn = null; }
-    const el = document.getElementById('chatRoom');
-    if (el) el.remove();
-  }
-
-  async function loadMessages() {
+  async function updateRoomStatus() {
     if (!_currentRoom) return;
-    const me = SB.getUser();
-    if (!me) return;
-    const box = document.getElementById('chatMessages');
-    if (!box) return;
     try {
-      const res = await SB.from('messages').select('*');
-      const all = (res.data || []).filter(m =>
-        (m.sender_id === me.id && m.receiver_id === _currentRoom.id) ||
-        (m.receiver_id === me.id && m.sender_id === _currentRoom.id)
-      );
-      all.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-      _messages = all;
-      let html = '';
-      if (!all.length) {
-        html = '<div style="text-align:center;padding:30px;color:#b2bec3;font-size:13px;">شروع گفتگو کن! 👋</div>';
-      } else {
-        all.forEach(m => { html += renderMessage(m, me.id); });
+      const res = await SB.from('users').select('*').eq('id', _currentRoom.id);
+      const user = (res.data || [])[0];
+      if (!user) return;
+      _currentRoom = user;
+      const el = document.getElementById('chatRoomStatus');
+      if (el) {
+        el.innerHTML = isOnline(user)
+               el.innerHTML = isOnline(user)
+        ? '<span style="color:#00b894;font-size:11px;">● آنلاین</span>'
+        : '<span style="color:#b2bec3;font-size:11px;">آفلاین</span>';
+    }
+  } catch (e) {}
+}
+
+// ============ تایپینگ ============
+function onTyping() {
+  if (!_currentRoom) return;
+  const me = SB.getUser();
+  if (!me) return;
+  if (_typingTimer) return;
+  sendTyping();
+  _typingTimer = setTimeout(() => { _typingTimer = null; }, 2000);
+}
+
+async function sendTyping() {
+  if (!_currentRoom) return;
+  const me = SB.getUser();
+  if (!me) return;
+  try {
+    await SB.update('users', {
+      typing_to: _currentRoom.id,
+      typing_until: new Date(Date.now() + 4000).toISOString()
+    }, { id: me.id });
+  } catch (e) {}
+}
+
+async function checkTypingStatus() {
+  if (!_currentRoom) return;
+  try {
+    const res = await SB.from('users').select('*').eq('id', _currentRoom.id);
+    const user = (res.data || [])[0];
+    if (!user) return;
+    const el = document.getElementById('chatTyping');
+    if (!el) return;
+    const isTyping = user.typing_to === SB.getUser().id &&
+                     user.typing_until &&
+                     new Date(user.typing_until).getTime() > Date.now();
+    el.style.display = isTyping ? 'flex' : 'none';
+  } catch (e) {}
+}
+
+// ============ تیک خوانده شده ============
+async function markAsRead() {
+  if (!_currentRoom) return;
+  const me = SB.getUser();
+  if (!me) return;
+  try {
+    const res = await SB.from('messages').select('*');
+    const unread = (res.data || []).filter(m =>
+      m.sender_id === _currentRoom.id &&
+      m.receiver_id === me.id &&
+      !m.read_at
+    );
+    for (const m of unread) {
+      await SB.update('messages', {
+        read_at: new Date().toISOString()
+      }, { id: m.id });
+    }
+  } catch (e) {}
+}
+
+function giftClicked() {
+  try { showGiftMenu(); } catch(e) { showToast('❌ ' + e.message); }
+}
+
+function gameClicked() {
+  try { showGameMenu(); } catch(e) { showToast('❌ ' + e.message); }
+}
+
+function closeRoom() {
+  clearInterval(_refreshTimer);
+  clearInterval(_typingCheckTimer);
+  _refreshTimer = null;
+  _typingCheckTimer = null;
+  _currentRoom = null;
+  _messages = [];
+  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; _currentBtn = null; }
+  const el = document.getElementById('chatRoom');
+  if (el) el.remove();
+}
+
+async function loadMessages() {
+  if (!_currentRoom) return;
+  const me = SB.getUser();
+  if (!me) return;
+  const box = document.getElementById('chatMessages');
+  if (!box) return;
+  try {
+    const res = await SB.from('messages').select('*');
+    const all = (res.data || []).filter(m =>
+      (m.sender_id === me.id && m.receiver_id === _currentRoom.id) ||
+      (m.receiver_id === me.id && m.sender_id === _currentRoom.id)
+    );
+    all.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    _messages = all;
+
+    const newestId = all.length ? all[all.length - 1].id : 0;
+    if (newestId !== _lastMsgId) {
+      _lastMsgId = newestId;
+      if (all.length && all[all.length - 1].sender_id !== me.id) {
+        notifyMessage(_currentRoom, all[all.length - 1]);
       }
-      if (box.getAttribute('data-last') !== html) {
-        box.setAttribute('data-last', html);
-        box.innerHTML = html;
-        box.scrollTop = box.scrollHeight;
-        loadVoiceDurations();
-      }
-    } catch (err) { console.warn('loadMessages error:', err); }
+    }
+
+    let html = '';
+    if (!all.length) {
+      html = '<div style="text-align:center;padding:30px;color:#b2bec3;font-size:13px;">شروع گفتگو کن! 👋</div>';
+    } else {
+      all.forEach(m => { html += renderMessage(m, me.id); });
+    }
+    if (box.getAttribute('data-last') !== html) {
+      box.setAttribute('data-last', html);
+      box.innerHTML = html;
+      box.scrollTop = box.scrollHeight;
+      loadVoiceDurations();
+    }
+    markAsRead();
+  } catch (err) { console.warn('loadMessages error:', err); }
+}
+
+function renderMessage(msg, myId) {
+  const isMe = msg.sender_id === myId;
+  const cls = isMe ? 'chat-msg-me' : 'chat-msg-other';
+  const time = formatTime(msg.created_at);
+
+  let tick = '';
+  if (isMe) {
+    tick = msg.read_at
+      ? ' <span style="color:#74c0fc;font-size:12px;font-weight:bold;">✓✓</span>'
+      : ' <span style="opacity:.6;font-size:12px;">✓</span>';
   }
 
-  function renderMessage(msg, myId) {
-    const isMe = msg.sender_id === myId;
-    const cls = isMe ? 'chat-msg-me' : 'chat-msg-other';
-    const time = formatTime(msg.created_at);
-    if (msg.type === 'image' && msg.media_url) {
-        return `<div class="chat-msg chat-msg-image ${cls}">
-        <img src="${escapeHtml(msg.media_url)}" onclick="window.open('${escapeHtml(msg.media_url)}','_blank')">
-        <div class="chat-msg-time" style="${isMe ? 'color:#fff' : ''}">${time}</div>
-      </div>`;
-    }
-    if (msg.type === 'audio' && msg.media_url) {
-      return `<div class="chat-msg chat-msg-voice ${cls}">
-        <button class="voice-play-btn" onclick="CHAT.playVoice(this, '${escapeHtml(msg.media_url)}')">▶</button>
-        <div class="voice-wave"><span></span><span></span><span></span><span></span><span></span></div>
-        <span class="voice-dur" data-url="${escapeHtml(msg.media_url)}" style="font-size:11px;opacity:.8;min-width:32px;">۰:۰۰</span>
-        <div style="font-size:10px;opacity:.7;">${time}</div>
-      </div>`;
-    }
-    if (msg.type === 'gift') {
-      return `<div class="chat-msg ${cls}" style="background:linear-gradient(135deg,#FDCB6E,#E67E22);color:#fff;font-weight:bold;">
-        🎁 ${escapeHtml(msg.text || '')}
-        <div class="chat-msg-time" style="color:#fff">${time}</div>
-      </div>`;
-    }
-    if (msg.type === 'game_invite') {
-      return `<div class="chat-msg ${cls}" style="background:linear-gradient(135deg,#6C5CE7,#0984E3);color:#fff;font-weight:bold;">
-        🎮 ${escapeHtml(msg.text || '')}
-        <div class="chat-msg-time" style="color:#fff">${time}</div>
-      </div>`;
-    }
-    return `<div class="chat-msg ${cls}">
-      ${escapeHtml(msg.text || '')}
-      <div class="chat-msg-time">${time}</div>
+  if (msg.type === 'image' && msg.media_url) {
+    return `<div class="chat-msg chat-msg-image ${cls}">
+      <img src="${escapeHtml(msg.media_url)}" onclick="window.open('${escapeHtml(msg.media_url)}','_blank')">
+      <div class="chat-msg-time" style="${isMe ? 'color:#fff' : ''}">${time}${tick}</div>
     </div>`;
   }
-
-  function formatTime(iso) {
-    try {
-      const d = new Date(iso);
-      return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
-    } catch (e) { return ''; }
+  if (msg.type === 'audio' && msg.media_url) {
+    return `<div class="chat-msg chat-msg-voice ${cls}">
+      <button class="voice-play-btn" onclick="CHAT.playVoice(this, '${escapeHtml(msg.media_url)}')">▶</button>
+      <div class="voice-wave"><span></span><span></span><span></span><span></span><span></span></div>
+      <span class="voice-dur" data-url="${escapeHtml(msg.media_url)}" style="font-size:11px;opacity:.8;min-width:32px;">۰:۰۰</span>
+      <div style="font-size:10px;opacity:.7;">${time}${tick}</div>
+    </div>`;
   }
-
-  async function sendMessage() {
-    if (!_currentRoom) return;
-    const me = SB.getUser();
-    if (!me) return;
-    const input = document.getElementById('chatTextInput');
-    const text = (input.value || '').trim();
-    if (!text) return;
-    input.value = '';
-    try {
-      await SB.insert('messages', {
-        sender_id: me.id, receiver_id: _currentRoom.id,
-        text: text, type: 'text'
-      });
-      loadMessages();
-    } catch (err) { console.warn('sendMessage error:', err); showToast('❌ خطا'); }
+  if (msg.type === 'gift') {
+    return `<div class="chat-msg ${cls}" style="background:linear-gradient(135deg,#FDCB6E,#E67E22);color:#fff;font-weight:bold;">
+      🎁 ${escapeHtml(msg.text || '')}
+      <div class="chat-msg-time" style="color:#fff">${time}${tick}</div>
+    </div>`;
   }
-
-  async function sendImage(evt) {
-    const file = evt.target.files[0];
-    if (!file || !_currentRoom) return;
-    const me = SB.getUser();
-    if (!me) return;
-    if (file.size > 5 * 1024 * 1024) { showToast('❌ عکس بزرگه'); return; }
-    showToast('⏳ در حال آپلود...');
-    try {
-      const url = await uploadFile(file, 'img');
-      await SB.insert('messages', {
-        sender_id: me.id, receiver_id: _currentRoom.id,
-        text: '', type: 'image', media_url: url
-      });
-      loadMessages();
-    } catch (err) { console.warn('sendImage error:', err); showToast('❌ خطا'); }
+  if (msg.type === 'game_invite') {
+    return `<div class="chat-msg ${cls}" style="background:linear-gradient(135deg,#6C5CE7,#0984E3);color:#fff;font-weight:bold;">
+      🎮 ${escapeHtml(msg.text || '')}
+      <div class="chat-msg-time" style="color:#fff">${time}${tick}</div>
+    </div>`;
   }
+  return `<div class="chat-msg ${cls}">
+    ${escapeHtml(msg.text || '')}
+    <div class="chat-msg-time">${time}${tick}</div>
+  </div>`;
+}
 
-  async function uploadFile(file, prefix) {
-    const ext = (file.name || 'file.bin').split('.').pop() || 'bin';
-    const name = prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8) + '.' + ext;
-    const url = SUPABASE_URL + '/storage/v1/object/chat-media/' + name;
-    const token = SB.getSession() ? SB.getSession().access_token : SUPABASE_KEY;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': file.type || 'application/octet-stream',
-        'x-upsert': 'true'
-      },
-      body: file
+function formatTime(iso) {
+  try {
+    const d = new Date(iso);
+    return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+  } catch (e) { return ''; }
+}
+
+async function sendMessage() {
+  if (!_currentRoom) return;
+  const me = SB.getUser();
+  if (!me) return;
+  const input = document.getElementById('chatTextInput');
+  const text = (input.value || '').trim();
+  if (!text) return;
+  input.value = '';
+  try {
+    await SB.insert('messages', {
+      sender_id: me.id, receiver_id: _currentRoom.id,
+      text: text, type: 'text'
     });
-    if (!res.ok) throw new Error('upload failed');
-    return SUPABASE_URL + '/storage/v1/object/public/chat-media/' + name;
-  }
-
-  async function toggleRecord() {
-    if (_mediaRecorder && _mediaRecorder.state === 'recording') {
-      _mediaRecorder.stop();
-      return;
-    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      _audioChunks = [];
-      _mediaRecorder = new MediaRecorder(stream);
-      _recordingStart = Date.now();
-      _mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) _audioChunks.push(e.data); };
-      _mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(_audioChunks, { type: 'audio/webm' });
-        await sendVoice(blob);
-        resetRecordUI();
-      };
-      _mediaRecorder.start();
-      showRecordingUI();
-    } catch (err) { showToast('❌ میکروفون'); }
-  }
+      await SB.update('users', { typing_to: null, typing_until: null }, { id: me.id });
+    } catch (e) {}
+    loadMessages();
+  } catch (err) { console.warn('sendMessage error:', err); showToast('❌ خطا'); }
+}
 
-  function showRecordingUI() {
-    const bar = document.getElementById('chatInputBar');
-    if (!bar) return;
-    bar.classList.add('recording');
-    bar.innerHTML = `<div class="recording-indicator"><span class="recording-dot"></span><span>در حال ضبط...</span></div><button class="chat-room-btn chat-room-send" onclick="CHAT.toggleRecord()">⏹</button>`;
-  }
+async function notifyMessage(fromUser, msg) {
+  if (typeof Notification === 'undefined') return;
+  if (Notification.permission !== 'granted') return;
+  const name = fromUser.display_name || 'کاربر';
+  let body = msg.text || '';
+  if (msg.type === 'image') body = '📷 عکس';
+  if (msg.type === 'audio') body = '🎤 ویس';
+  if (msg.type === 'gift') body = '🎁 هدیه';
+  if (msg.type === 'game_invite') body = '🎮 دعوت بازی';
+  try {
+    new Notification(name, { body: body, icon: 'icon.svg' });
+  } catch (e) {}
+}
 
-  function resetRecordUI() {
-    const bar = document.getElementById('chatInputBar');
-    if (!bar) return;
-    bar.classList.remove('recording');
-    bar.innerHTML = `
-      <button class="chat-room-btn" onclick="document.getElementById('chatImageInput').click()">📷</button>
-      <input type="file" id="chatImageInput" accept="image/*" style="display:none" onchange="CHAT.sendImage(event)">
-      <input type="text" id="chatTextInput" placeholder="پیام بنویس..." onkeydown="if(event.key==='Enter')CHAT.sendMessage()">
-      <button class="chat-room-btn" onclick="CHAT.toggleRecord()" id="chatVoiceBtn">🎤</button>
-      <button class="chat-room-btn chat-room-send" onclick="CHAT.sendMessage()">➤</button>
-    `;
+async function requestNotificationPermission() {
+  if (typeof Notification === 'undefined') return;
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
   }
+}
 
-  async function sendVoice(blob) {
-    if (!_currentRoom) return;
-    const me = SB.getUser();
-    if (!me) return;
-    showToast('⏳ ارسال ویس...');
-    try {
-      const file = new File([blob], 'voice.webm', { type: 'audio/webm' });
-      const url = await uploadFile(file, 'voice');
-      await SB.insert('messages', {
-        sender_id: me.id, receiver_id: _currentRoom.id,
-        text: '', type: 'audio', media_url: url
-      });
-      loadMessages();
-    } catch (err) { showToast('❌ خطا'); }
+async function sendImage(evt) {
+  const file = evt.target.files[0];
+  if (!file || !_currentRoom) return;
+  const me = SB.getUser();
+  if (!me) return;
+  if (file.size > 5 * 1024 * 1024) { showToast('❌ عکس بزرگه'); return; }
+  showToast('⏳ در حال آپلود...');
+  try {
+    const url = await uploadFile(file, 'img');
+    await SB.insert('messages', {
+      sender_id: me.id, receiver_id: _currentRoom.id,
+      text: '', type: 'image', media_url: url
+    });
+    loadMessages();
+  } catch (err) { console.warn('sendImage error:', err); showToast('❌ خطا'); }
+}
+
+async function uploadFile(file, prefix) {
+  const ext = (file.name || 'file.bin').split('.').pop() || 'bin';
+  const name = prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+  const url = SUPABASE_URL + '/storage/v1/object/chat-media/' + name;
+  const token = SB.getSession() ? SB.getSession().access_token : SUPABASE_KEY;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': file.type || 'application/octet-stream',
+      'x-upsert': 'true'
+    },
+    body: file
+  });
+  if (!res.ok) throw new Error('upload failed');
+  return SUPABASE_URL + '/storage/v1/object/public/chat-media/' + name;
+}
+
+async function toggleRecord() {
+  if (_mediaRecorder && _mediaRecorder.state === 'recording') {
+    _mediaRecorder.stop();
+    return;
   }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _audioChunks = [];
+    _mediaRecorder = new MediaRecorder(stream);
+    _recordingStart = Date.now();
+    _mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) _audioChunks.push(e.data); };
+    _mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(_audioChunks, { type: 'audio/webm' });
+      await sendVoice(blob);
+      resetRecordUI();
+    };
+    _mediaRecorder.start();
+    showRecordingUI();
+  } catch (err) { showToast('❌ میکروفون'); }
+}
 
-  async function playVoice(btn, url) {
-    if (_currentAudio && _currentBtn === btn && !_currentAudio.paused) {
-      _currentAudio.pause();
+function showRecordingUI() {
+  const bar = document.getElementById('chatInputBar');
+  if (!bar) return;
+  bar.classList.add('recording');
+  bar.innerHTML = `<div class="recording-indicator"><span class="recording-dot"></span><span>در حال ضبط...</span></div><button class="chat-room-btn chat-room-send" onclick="CHAT.toggleRecord()">⏹</button>`;
+}
+
+function resetRecordUI() {
+  const bar = document.getElementById('chatInputBar');
+  if (!bar) return;
+  bar.classList.remove('recording');
+  bar.innerHTML = `
+    <button class="chat-room-btn" onclick="document.getElementById('chatImageInput').click()">📷</button>
+    <input type="file" id="chatImageInput" accept="image/*" style="display:none" onchange="CHAT.sendImage(event)">
+    <input type="text" id="chatTextInput" placeholder="پیام بنویس..." oninput="CHAT.onTyping()" onkeydown="if(event.key==='Enter')CHAT.sendMessage()">
+    <button class="chat-room-btn" onclick="CHAT.toggleRecord()" id="chatVoiceBtn">🎤</button>
+    <button class="chat-room-btn chat-room-send" onclick="CHAT.sendMessage()">➤</button>
+  `;
+}
+
+async function sendVoice(blob) {
+  if (!_currentRoom) return;
+  const me = SB.getUser();
+  if (!me) return;
+  showToast('⏳ ارسال ویس...');
+  try {
+    const file = new File([blob], 'voice.webm', { type: 'audio/webm' });
+    const url = await uploadFile(file, 'voice');
+    await SB.insert('messages', {
+      sender_id: me.id, receiver_id: _currentRoom.id,
+      text: '', type: 'audio', media_url: url
+    });
+    loadMessages();
+  } catch (err) { showToast('❌ خطا'); }
+}
+
+async function playVoice(btn, url) {
+  if (_currentAudio && _currentBtn === btn && !_currentAudio.paused) {
+    _currentAudio.pause();
+    btn.textContent = '▶';
+    return;
+  }
+  if (_currentAudio) {
+    _currentAudio.pause();
+    if (_currentBtn) _currentBtn.textContent = '▶';
+  }
+  btn.textContent = '⏳';
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const audio = new Audio(blobUrl);
+    _currentAudio = audio;
+    _currentBtn = btn;
+    audio.onended = () => {
       btn.textContent = '▶';
-      return;
-    }
-    if (_currentAudio) {
-      _currentAudio.pause();
-      if (_currentBtn) _currentBtn.textContent = '▶';
-    }
-    btn.textContent = '⏳';
+      _currentAudio = null;
+      _currentBtn = null;
+      URL.revokeObjectURL(blobUrl);
+    };
+    await audio.play();
+    btn.textContent = '⏸';
+  } catch (err) {
+    btn.textContent = '▶';
+    showToast('❌ خطا در پخش');
+  }
+}
+
+async function loadVoiceDurations() {
+  const els = document.querySelectorAll('.voice-dur');
+  for (const el of els) {
+    const url = el.getAttribute('data-url');
+    if (!url || el.getAttribute('data-loaded') === '1') continue;
+    el.setAttribute('data-loaded', '1');
     try {
       const res = await fetch(url);
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
-      const audio = new Audio(blobUrl);
-      _currentAudio = audio;
-      _currentBtn = btn;
-      audio.onended = () => {
-        btn.textContent = '▶';
-        _currentAudio = null;
-        _currentBtn = null;
+      const a = new Audio(blobUrl);
+      a.onloadedmetadata = () => {
+        const dur = a.duration;
+        if (isFinite(dur) && dur > 0) {
+          const m = Math.floor(dur / 60);
+          const s = Math.floor(dur % 60);
+          const faS = s < 10 ? '۰' + toFa(s) : toFa(s);
+          el.textContent = toFa(m) + ':' + faS;
+        } else {
+          el.textContent = '—';
+        }
         URL.revokeObjectURL(blobUrl);
       };
-      await audio.play();
-      btn.textContent = '⏸';
-    } catch (err) {
-      btn.textContent = '▶';
-      showToast('❌ خطا در پخش');
-    }
+      a.onerror = () => { el.textContent = '—'; URL.revokeObjectURL(blobUrl); };
+    } catch (err) { el.textContent = '—'; }
   }
+}
 
-  async function loadVoiceDurations() {
-    const els = document.querySelectorAll('.voice-dur');
-    for (const el of els) {
-      const url = el.getAttribute('data-url');
-      if (!url || el.getAttribute('data-loaded') === '1') continue;
-      el.setAttribute('data-loaded', '1');
-      try {
-        const res = await fetch(url);
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        const a = new Audio(blobUrl);
-        a.onloadedmetadata = () => {
-          const dur = a.duration;
-          if (isFinite(dur) && dur > 0) {
-            const m = Math.floor(dur / 60);
-            const s = Math.floor(dur % 60);
-            const faS = s < 10 ? '۰' + toFa(s) : toFa(s);
-            el.textContent = toFa(m) + ':' + faS;
-          } else {
-            el.textContent = '—';
-          }
-          URL.revokeObjectURL(blobUrl);
-        };
-        a.onerror = () => { el.textContent = '—'; URL.revokeObjectURL(blobUrl); };
-      } catch (err) { el.textContent = '—'; }
-    }
-  }
+function toFa(n) {
+  const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+  return String(n).replace(/\d/g, d => fa[+d]);
+}
 
-  function toFa(n) {
-    const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
-    return String(n).replace(/\d/g, d => fa[+d]);
-  }
+function showGiftMenu() {
+  const overlay = document.createElement('div');
+  overlay.className = 'user-menu-popup';
+  overlay.id = 'giftMenu';
+  overlay.onclick = (e) => { if (e.target === overlay) closeGiftMenu(); };
+  overlay.innerHTML = `<div class="user-menu-box">
+    <div style="text-align:center;padding:12px;font-weight:bold;color:#6C5CE7;">💰 ارسال هدیه</div>
+    <div class="user-menu-item" onclick="CHAT.sendGift('coin', 10); CHAT.closeGiftMenu();"><span>🪙</span><span>۱۰ سکه</span></div>
+    <div class="user-menu-item" onclick="CHAT.sendGift('coin', 50); CHAT.closeGiftMenu();"><span>🪙</span><span>۵۰ سکه</span></div>
+    <div class="user-menu-item" onclick="CHAT.sendGift('gem', 1); CHAT.closeGiftMenu();"><span>💎</span><span>۱ الماس</span></div>
+    <div class="user-menu-item" onclick="CHAT.sendGift('gem', 5); CHAT.closeGiftMenu();"><span>💎</span><span>۵ الماس</span></div>
+    <div class="user-menu-item user-menu-cancel" onclick="CHAT.closeGiftMenu()"><span>انصراف</span></div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
 
-  function showGiftMenu() {
-    const overlay = document.createElement('div');
-    overlay.className = 'user-menu-popup';
-    overlay.id = 'giftMenu';
-    overlay.onclick = (e) => { if (e.target === overlay) closeGiftMenu(); };
-    overlay.innerHTML = `<div class="user-menu-box">
-      <div style="text-align:center;padding:12px;font-weight:bold;color:#6C5CE7;">💰 ارسال هدیه</div>
-      <div class="user-menu-item" onclick="CHAT.sendGift('coin', 10); CHAT.closeGiftMenu();"><span>🪙</span><span>۱۰ سکه</span></div>
-      <div class="user-menu-item" onclick="CHAT.sendGift('coin', 50); CHAT.closeGiftMenu();"><span>🪙</span><span>۵۰ سکه</span></div>
-      <div class="user-menu-item" onclick="CHAT.sendGift('gem', 1); CHAT.closeGiftMenu();"><span>💎</span><span>۱ الماس</span></div>
-      <div class="user-menu-item" onclick="CHAT.sendGift('gem', 5); CHAT.closeGiftMenu();"><span>💎</span><span>۵ الماس</span></div>
-      <div class="user-menu-item user-menu-cancel" onclick="CHAT.closeGiftMenu()"><span>انصراف</span></div>
-    </div>`;
-    document.body.appendChild(overlay);
-  }
+function closeGiftMenu() {
+  const el = document.getElementById('giftMenu');
+  if (el) el.remove();
+}
 
-  function closeGiftMenu() {
-    const el = document.getElementById('giftMenu');
-    if (el) el.remove();
-  }
+async function sendGift(type, amount) {
+  if (!_currentRoom) return;
+  const me = SB.getUser();
+  if (!me) return;
+  const user = STATE.getUser();
+  if (type === 'coin' && (user.coins || 0) < amount) { showToast('❌ سکه کافی نیست'); return; }
+  if (type === 'gem' && (user.gems || 0) < amount) { showToast('❌ الماس کافی نیست'); return; }
+  try {
+    if (type === 'coin') user.coins = (user.coins || 0) - amount;
+    else user.gems = (user.gems || 0) - amount;
+    STATE.saveUser(user);
+    if (typeof APP !== 'undefined' && APP.updateHeader) APP.updateHeader();
+    const text = type === 'coin' ? `${amount} سکه فرستاد 🪙` : `${amount} الماس فرستاد 💎`;
+    await SB.insert('messages', {
+      sender_id: me.id, receiver_id: _currentRoom.id,
+      text: text, type: 'gift'
+    });
+    showToast('🎁 فرستاده شد');
+    loadMessages();
+  } catch (err) { showToast('❌ خطا'); }
+}
 
-  async function sendGift(type, amount) {
-    if (!_currentRoom) return;
-    const me = SB.getUser();
-    if (!me) return;
-    const user = STATE.getUser();
-    if (type === 'coin' && (user.coins || 0) < amount) { showToast('❌ سکه کافی نیست'); return; }
-    if (type === 'gem' && (user.gems || 0) < amount) { showToast('❌ الماس کافی نیست'); return; }
-    try {
-      if (type === 'coin') user.coins = (user.coins || 0) - amount;
-      else user.gems = (user.gems || 0) - amount;
-      STATE.saveUser(user);
-      if (typeof APP !== 'undefined' && APP.updateHeader) APP.updateHeader();
-      const text = type === 'coin' ? `${amount} سکه فرستاد 🪙` : `${amount} الماس فرستاد 💎`;
-      await SB.insert('messages', {
-        sender_id: me.id, receiver_id: _currentRoom.id,
-        text: text, type: 'gift'
-      });
-      showToast('🎁 فرستاده شد');
-      loadMessages();
-    } catch (err) { showToast('❌ خطا'); }
-  }
+function showGameMenu() {
+  const overlay = document.createElement('div');
+  overlay.className = 'user-menu-popup';
+  overlay.id = 'gameMenu';
+  overlay.onclick = (e) => { if (e.target === overlay) closeGameMenu(); };
+  overlay.innerHTML = `<div class="user-menu-box">
+    <div style="text-align:center;padding:12px;font-weight:bold;color:#6C5CE7;">🎮 بازی با دوست</div>
+    <div class="user-menu-item" onclick="CHAT.sendGameInvite('سنگ کاغذ قیچی'); CHAT.closeGameMenu();"><span>✊</span><span>سنگ کاغذ قیچی</span></div>
+    <div class="user-menu-item" onclick="CHAT.sendGameInvite('حدس عدد'); CHAT.closeGameMenu();"><span>🔢</span><span>حدس عدد</span></div>
+    <div class="user-menu-item" onclick="CHAT.sendGameInvite('دوز'); CHAT.closeGameMenu();"><span>❌</span><span>دوز</span></div>
+    <div class="user-menu-item" onclick="CHAT.sendGameInvite('حافظه'); CHAT.closeGameMenu();"><span>🃏</span><span>حافظه</span></div>
+    <div class="user-menu-item user-menu-cancel" onclick="CHAT.closeGameMenu()"><span>انصراف</span></div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
 
-  function showGameMenu() {
-    const overlay = document.createElement('div');
-    overlay.className = 'user-menu-popup';
-    overlay.id = 'gameMenu';
-    overlay.onclick = (e) => { if (e.target === overlay) closeGameMenu(); };
-    overlay.innerHTML = `<div class="user-menu-box">
-      <div style="text-align:center;padding:12px;font-weight:bold;color:#6C5CE7;">🎮 بازی با دوست</div>
-      <div class="user-menu-item" onclick="CHAT.sendGameInvite('سنگ کاغذ قیچی'); CHAT.closeGameMenu();"><span>✊</span><span>سنگ کاغذ قیچی</span></div>
-      <div class="user-menu-item" onclick="CHAT.sendGameInvite('حدس عدد'); CHAT.closeGameMenu();"><span>🔢</span><span>حدس عدد</span></div>
-      <div class="user-menu-item" onclick="CHAT.sendGameInvite('دوز'); CHAT.closeGameMenu();"><span>❌</span><span>دوز</span></div>
-      <div class="user-menu-item" onclick="CHAT.sendGameInvite('حافظه'); CHAT.closeGameMenu();"><span>🃏</span><span>حافظه</span></div>
-      <div class="user-menu-item user-menu-cancel" onclick="CHAT.closeGameMenu()"><span>انصراف</span></div>
-    </div>`;
-    document.body.appendChild(overlay);
-  }
+function closeGameMenu() {
+  const el = document.getElementById('gameMenu');
+  if (el) el.remove();
+}
 
-  function closeGameMenu() {
-    const el = document.getElementById('gameMenu');
-    if (el) el.remove();
-  }
+async function sendGameInvite(gameName) {
+  if (!_currentRoom) return;
+  const me = SB.getUser();
+  if (!me) return;
+  try {
+    await SB.insert('messages', {
+      sender_id: me.id, receiver_id: _currentRoom.id,
+      text: `دعوت به بازی ${gameName}`, type: 'game_invite'
+    });
+    showToast('🎮 دعوت فرستاده شد');
+    loadMessages();
+  } catch (err) { showToast('❌ خطا'); }
+}
 
-  async function sendGameInvite(gameName) {
-    if (!_currentRoom) return;
-    const me = SB.getUser();
-    if (!me) return;
-    try {
-      await SB.insert('messages', {
-        sender_id: me.id, receiver_id: _currentRoom.id,
-        text: `دعوت به بازی ${gameName}`, type: 'game_invite'
-      });
-      showToast('🎮 دعوت فرستاده شد');
-      loadMessages();
-    } catch (err) { showToast('❌ خطا'); }
-  }
-
-  return {
-    init, render, setTab, onSearchInput,
-    loadFriends, searchUsers, sendRequest, acceptRequest, rejectRequest,
-    loadRequests, loadBlocked, renderAvatar, renderUserLabel, escapeHtml,
-    showUserMenu, closeUserMenu, removeFriend, blockUser, unblockUser,
-    clearHistory, openRoom, closeRoom, loadMessages, sendMessage, sendImage,
-    toggleRecord, sendVoice, playVoice, loadVoiceDurations,
-    showGiftMenu, closeGiftMenu, sendGift, giftClicked,
-    showGameMenu, closeGameMenu, sendGameInvite, gameClicked
-  };
-})();  
+return {
+  init, render, setTab, onSearchInput,
+  loadFriends, searchUsers, sendRequest, acceptRequest, rejectRequest,
+  loadRequests, loadBlocked, renderAvatar, renderUserLabel, escapeHtml,
+  showUserMenu, closeUserMenu, removeFriend, blockUser, unblockUser,
+  clearHistory, openRoom, closeRoom, loadMessages, sendMessage, sendImage,
+  toggleRecord, sendVoice, playVoice, loadVoiceDurations,
+  showGiftMenu, closeGiftMenu, sendGift, giftClicked,
+  showGameMenu, closeGameMenu, sendGameInvite, gameClicked,
+  onTyping, requestNotificationPermission
+};
+})(); 
