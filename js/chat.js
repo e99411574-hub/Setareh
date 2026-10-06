@@ -42,8 +42,7 @@ const CHAT = (() => {
   function renderGuestWarning() {
     return `<div class="chat-empty" style="padding-top:80px;">
       <div class="chat-empty-icon">🔒</div>
-      <div class="chat-empty-text">برای استفاده از چت و دوستی،<br>اول وارد حساب خودت شو</div>
-      <button onclick="AUTH.showForm('login')" style="margin-top:20px;background:linear-gradient(135deg,#6C5CE7,#0984E3);color:#fff;border:none;padding:12px 28px;border-radius:14px;font-family:inherit;font-weight:bold;font-size:14px;cursor:pointer;">ورود / ثبت‌نام</button>
+      <div class="chat-empty-text">در حال آماده‌سازی...</div>
     </div>`;
   }
 
@@ -67,10 +66,10 @@ const CHAT = (() => {
 
   function renderSearchTab() {
     return `<div class="chat-search">
-      <input id="chatSearchInput" type="text" placeholder="🔍 جستجوی کاربر (نام، ایمیل یا @username)" value="${escapeHtml(_searchQuery)}" oninput="CHAT.onSearchInput(this.value)">
+      <input id="chatSearchInput" type="text" placeholder="🔍 جستجوی کاربر (نام یا @username)" value="${escapeHtml(_searchQuery)}" oninput="CHAT.onSearchInput(this.value)">
     </div>
     <div id="searchResults" class="user-list">
-      <div style="text-align:center;padding:40px;color:#b2bec3;">اسم، ایمیل یا @username رو بنویس</div>
+      <div style="text-align:center;padding:40px;color:#b2bec3;">اسم یا @username رو بنویس</div>
     </div>`;
   }
 
@@ -91,11 +90,22 @@ const CHAT = (() => {
   }
 
   function renderAvatar(user) {
+    let inner;
     if (user.avatar === 'custom' && user.avatar_url) {
-      return `<img src="${escapeHtml(user.avatar_url)}" alt="">`;
+      inner = `<img src="${escapeHtml(user.avatar_url)}" alt="">`;
+    } else if (user.avatar === 'female') {
+      inner = '👩';
+    } else {
+      inner = '👨';
     }
-    if (user.avatar === 'female') return '👩';
-    return '👨';
+    const dot = isOnline(user) ? '<span class="online-dot"></span>' : '';
+    return inner + dot;
+  }
+
+  function isOnline(user) {
+    if (!user || !user.last_seen) return false;
+    const diff = Date.now() - new Date(user.last_seen).getTime();
+    return diff < 90000;
   }
 
   function renderUserLabel(user) {
@@ -165,9 +175,8 @@ const CHAT = (() => {
       const filtered = all.filter(u => {
         if (u.id === me.id) return false;
         const name = (u.display_name || '').toLowerCase();
-        const email = (u.email || '').toLowerCase();
         const uname = (u.username || '').toLowerCase();
-        return name.includes(q) || email.includes(q) || uname.includes(q);
+        return name.includes(q) || uname.includes(q);
       });
       if (!filtered.length) {
         box.innerHTML = `<div class="chat-empty"><div class="chat-empty-icon">🔍</div><div class="chat-empty-text">کاربری با این مشخصات پیدا نشد</div></div>`;
@@ -226,10 +235,7 @@ const CHAT = (() => {
       showToast('✅ درخواست فرستاده شد');
       if (typeof playSnd === 'function') playSnd('success');
       searchUsers(_searchQuery);
-    } catch (err) {
-      console.warn('sendRequest error:', err);
-      showToast('❌ خطا');
-    }
+    } catch (err) { showToast('❌ خطا'); }
   }
 
   async function acceptRequest(friendshipId) {
@@ -239,10 +245,7 @@ const CHAT = (() => {
       if (typeof playSnd === 'function') playSnd('success');
       searchUsers(_searchQuery);
       loadRequests();
-    } catch (err) {
-      console.warn('acceptRequest error:', err);
-      showToast('❌ خطا');
-    }
+    } catch (err) { showToast('❌ خطا'); }
   }
 
   async function loadRequests() {
@@ -271,9 +274,7 @@ const CHAT = (() => {
         html += renderRequestCard(u, req);
       });
       box.innerHTML = html;
-    } catch (err) {
-      console.warn('loadRequests error:', err);
-    }
+    } catch (err) { console.warn('loadRequests error:', err); }
   }
 
   function renderRequestCard(user, req) {
@@ -444,12 +445,10 @@ const CHAT = (() => {
   }
 
   function giftClicked() {
-    console.log('💰 gift');
     try { showGiftMenu(); } catch(e) { showToast('❌ ' + e.message); }
   }
 
   function gameClicked() {
-    console.log('🎮 game');
     try { showGameMenu(); } catch(e) { showToast('❌ ' + e.message); }
   }
 
@@ -497,7 +496,7 @@ const CHAT = (() => {
     const cls = isMe ? 'chat-msg-me' : 'chat-msg-other';
     const time = formatTime(msg.created_at);
     if (msg.type === 'image' && msg.media_url) {
-      return `<div class="chat-msg chat-msg-image ${cls}">
+        return `<div class="chat-msg chat-msg-image ${cls}">
         <img src="${escapeHtml(msg.media_url)}" onclick="window.open('${escapeHtml(msg.media_url)}','_blank')">
         <div class="chat-msg-time" style="${isMe ? 'color:#fff' : ''}">${time}</div>
       </div>`;
@@ -799,4 +798,4 @@ const CHAT = (() => {
     showGiftMenu, closeGiftMenu, sendGift, giftClicked,
     showGameMenu, closeGameMenu, sendGameInvite, gameClicked
   };
-})();
+})();  
