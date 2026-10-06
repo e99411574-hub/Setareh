@@ -4,7 +4,6 @@ var APP = {
   version: '2.0.0',
   _poemsCache: null,
 
-  // ============ راه‌اندازی ============
   init: function() {
     if (!STORAGE.isSupported()) {
       alert('مرورگر شما از ذخیره‌سازی پشتیبانی نمی‌کند');
@@ -12,7 +11,6 @@ var APP = {
 
     STATE.init();
 
-    // نمایش وضعیت Supabase
     setTimeout(function() {
       var msg = 'SB: ' + (typeof SB !== 'undefined' ? '✅' : '❌') + ' | ';
       msg += 'supabase: ' + (typeof supabase !== 'undefined' ? '✅' : '❌') + ' | ';
@@ -24,8 +22,6 @@ var APP = {
         }).catch(function(err) {
           if (typeof showToast === 'function') showToast(msg + ' | ⚠️ ' + (err.message || ''));
         });
-      } else {
-        if (typeof showToast === 'function') showToast(msg + ' | ❌ SB نیست');
       }
     }, 3000);
 
@@ -67,7 +63,6 @@ var APP = {
     console.log('⭐ ستاره آماده است — نسخه', this.version);
   },
 
-  // ============ نوار پایین ============
   bindNav: function() {
     var btns = document.querySelectorAll('.nav-btn');
     for (var i = 0; i < btns.length; i++) {
@@ -78,7 +73,6 @@ var APP = {
     }
   },
 
-  // ============ منوی کشویی ============
   bindMenu: function() {
     var btn = document.getElementById('menuBtn');
     var menu = document.getElementById('sideMenu');
@@ -109,7 +103,6 @@ var APP = {
     }
   },
 
-  // ============ هدر ============
   updateHeader: function() {
     var user = STATE.getUser();
     if (!user) return;
@@ -120,11 +113,13 @@ var APP = {
     var gemEl = document.getElementById('hdrGems');
     if (gemEl) gemEl.textContent = fmtNum(user.gems || 0);
 
+    var sbData = STATE.get('sbUserData');
     var nameEl = document.getElementById('hdrName');
-    if (nameEl) nameEl.textContent = user.name || t('guest');
+    if (nameEl) {
+      nameEl.textContent = (sbData && sbData.display_name) || user.name || t('guest');
+    }
   },
 
-  // ============ سلام ============
   setGreeting: function() {
     var h = new Date().getHours();
     var key = 'greet_evening';
@@ -136,38 +131,155 @@ var APP = {
     if (el) el.textContent = t(key);
   },
 
-  // ============ رندر خانه ============
+  // ============ صفحهٔ خانه (سبک عسل‌آباد) ============
   renderHome: function() {
     var c = document.getElementById('homeContent');
     if (!c) return;
 
     var user = STATE.getUser();
-    var html = '<div class="home-page">';
+    var sbData = STATE.get('sbUserData') || {};
 
-    // خوش‌آمد
-    html += '<div class="welcome-card">';
-    html += '<div class="welcome-icon">⭐</div>';
-    html += '<div class="welcome-text">';
-    html += '<div class="welcome-title">' + t('welcome') + '، ' + (user.name || t('guest')) + '!</div>';
-    html += '<div class="welcome-sub">' + t('welcome_sub') + '</div>';
+    var html = '<div class="home-abd">';
+
+    // ============ بخش ۱: بازی‌های آنلاین ============
+    html += '<div class="abad-card">';
+    html += '<div class="abad-title"><div class="left"><span class="icon">🎮</span>بازی‌های آنلاین</div><span class="more">…</span></div>';
+    html += '<div class="abad-row">';
+    var games = [
+      { id: 'rps',    icon: '✊',  label: 'سنگ کاغذ',  color: 'pink' },
+      { id: 'guess',  icon: '🔢',  label: 'حدس عدد',   color: 'purple' },
+      { id: 'ttt',    icon: '❌',  label: 'دوز',       color: 'blue' },
+      { id: 'memory', icon: '🃏',  label: 'حافظه',     color: 'green' },
+      { id: 'rps',    icon: '🎯',  label: 'هدف',       color: 'yellow' },
+      { id: 'guess',  icon: '⚡',  label: 'سرعت',      color: 'orange' }
+    ];
+    games.forEach(function(g) {
+      html += '<div class="abad-tile c-' + g.color + '" onclick="APP.startGame(\'' + g.id + '\')">';
+      html += '<div class="t-icon">' + g.icon + '</div>';
+      html += '<div class="t-label">' + g.label + '</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+
+    // ============ بخش ۲: چت با دوستان ============
+    html += '<div class="abad-card">';
+    html += '<div class="abad-title"><div class="left"><span class="icon">💬</span>حرف بزن</div><span class="more">…</span></div>';
+    html += '<div class="chat-big" onclick="ROUTER.go(\'chat\')">';
+    html += '<div class="cb-icon">💌</div>';
+    html += '<div class="cb-info">';
+    html += '<div class="cb-title">چت با دوستانت</div>';
+    html += '<div class="cb-sub">پیام، عکس و ویس بفرست 🎤</div>';
+    html += '</div>';
+    html += '<div class="cb-arrow">‹</div>';
     html += '</div>';
     html += '</div>';
 
-    // شعر روز
-    html += this._renderHomePoem();
-
-    // گردونه
-    if (typeof WHEEL !== 'undefined' && WHEEL.renderSection) {
-      html += WHEEL.renderSection();
-    }
-
-    // ماموریت‌ها
+    // ============ بخش ۳: ماموریت‌ها ============
     if (typeof MISSIONS !== 'undefined' && MISSIONS.render) {
-      html += '<div id="missionsContainer">' + MISSIONS.render() + '</div>';
+      var missionsHtml = MISSIONS.render();
+      if (missionsHtml) {
+        html += '<div class="abad-card">';
+        html += '<div class="abad-title"><div class="left"><span class="icon">🎯</span>ماموریت‌های روزانه</div><span class="more">…</span></div>';
+        html += '<div class="abad-row" style="gap:8px;">';
+        html += missionsHtml;
+        html += '</div></div>';
+      }
     }
+
+    // ============ بخش ۴: شانس و جایزه ============
+    html += '<div class="abad-card">';
+    html += '<div class="abad-title"><div class="left"><span class="icon">🎡</span>شانس و جایزه</div><span class="more">…</span></div>';
+    html += '<div class="abad-row">';
+    html += '<div class="abad-tile c-yellow" onclick="if(typeof WHEEL!==\'undefined\'&&WHEEL.open)WHEEL.open()"><div class="t-icon">🎡</div><div class="t-label">گردونه</div></div>';
+    html += '<div class="abad-tile c-pink" onclick="ROUTER.go(\'shop\')"><div class="t-icon">🎁</div><div class="t-label">جعبه</div></div>';
+    html += '<div class="abad-tile c-purple" onclick="ROUTER.go(\'shop\')"><div class="t-icon">💎</div><div class="t-label">الماس</div></div>';
+    html += '<div class="abad-tile c-orange" onclick="ROUTER.go(\'shop\')"><div class="t-icon">🪙</div><div class="t-label">سکه</div></div>';
+    html += '</div></div>';
+
+    // ============ بخش ۵: ابزارها ============
+    html += '<div class="abad-card">';
+    html += '<div class="abad-title"><div class="left"><span class="icon">🧰</span>ابزارها</div><span class="more">…</span></div>';
+    html += '<div class="abad-row">';
+    var tools = [
+      { id: 'calc',    icon: '🧮', label: 'ماشین‌حساب', color: 'green' },
+      { id: 'planner', icon: '📅', label: 'برنامه',     color: 'blue' },
+      { id: 'qa',      icon: '❓', label: 'پرسش',       color: 'purple' }
+    ];
+    tools.forEach(function(tl) {
+      html += '<div class="abad-tile c-' + tl.color + '" onclick="APP.openTool(\'' + tl.id + '\')">';
+      html += '<div class="t-icon">' + tl.icon + '</div>';
+      html += '<div class="t-label">' + tl.label + '</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+
+    // ============ بخش ۶: دوستان ============
+    html += '<div class="abad-card">';
+    html += '<div class="abad-title"><div class="left"><span class="icon">👥</span>دوستانت</div><span class="more">…</span></div>';
+    html += '<div class="abad-row" id="homeFriendsRow" style="gap:8px;">';
+    html += '<div style="text-align:center;padding:20px;color:#b8a8d8;font-size:12px;">در حال بارگذاری...</div>';
+    html += '</div></div>';
+
+    // ============ بخش ۷: شعر روز ============
+    html += '<div class="abad-card">';
+    html += '<div class="abad-title"><div class="left"><span class="icon">📜</span>شعر روز</div></div>';
+    var poem = this._getPoemOfDay();
+    html += '<div style="padding:10px 4px;">';
+    html += '<div style="font-size:11px;color:#b8a8d8;font-weight:700;margin-bottom:6px;">' + (poem.poet || '') + '</div>';
+    html += '<div style="font-size:14px;line-height:1.9;color:#2d1b4e;font-weight:600;">' + (poem.text || '') + '</div>';
+    html += '</div></div>';
 
     html += '</div>';
     c.innerHTML = html;
+
+    this._loadHomeFriends();
+  },
+
+  _loadHomeFriends: async function() {
+    var box = document.getElementById('homeFriendsRow');
+    if (!box) return;
+    if (typeof SB === 'undefined' || !SB.isLoggedIn || !SB.isLoggedIn()) return;
+
+    try {
+      var me = SB.getUser();
+      if (!me) return;
+
+      var res = await SB.from('friendships').select('*').eq('status', 'accepted');
+      var all = (res.data || []).filter(function(f) {
+        return f.user_id === me.id || f.friend_id === me.id;
+      });
+
+      var html = '<div class="abad-tile c-lavender" onclick="ROUTER.go(\'chat\')" style="width:76px;">';
+      html += '<div class="t-icon">➕</div>';
+      html += '<div class="t-label">افزودن</div>';
+      html += '</div>';
+
+      if (all.length) {
+        var friendIds = all.slice(0, 8).map(function(f) {
+          return f.user_id === me.id ? f.friend_id : f.user_id;
+        });
+
+        var uRes = await SB.from('users').select('*');
+        var users = (uRes.data || []).filter(function(u) {
+          return friendIds.indexOf(u.id) >= 0;
+        });
+
+        users.forEach(function(u) {
+          var name = (u.display_name || 'کاربر').substring(0, 10);
+          var av = u.avatar === 'female' ? '👩' : '👨';
+          html += '<div class="user-score" onclick="CHAT.openRoom(\'' + u.id + '\')">';
+          html += '<div class="us-avatar">' + av + '</div>';
+          html += '<div class="us-name">' + name + '</div>';
+          html += '</div>';
+        });
+      } else {
+        html += '<div style="text-align:center;padding:20px;color:#b8a8d8;font-size:12px;">هنوز دوستی نداری</div>';
+      }
+
+      box.innerHTML = html;
+    } catch (e) {
+      console.warn('home friends load error:', e);
+    }
   },
 
   _renderHomePoem: function() {
@@ -189,10 +301,6 @@ var APP = {
         .then(function(data) {
           if (data && data.poems && data.poems.length > 0) {
             self._poemsCache = data.poems;
-            if (document.getElementById('homeContent') &&
-                document.getElementById('homeContent').innerHTML.indexOf('poem-card') >= 0) {
-              self.renderHome();
-            }
           }
         })
         .catch(function(e) {
@@ -213,7 +321,6 @@ var APP = {
     return poems[idx];
   },
 
-  // ============ شروع بازی ============
   startGame: function(gameId) {
     if (typeof playSnd === 'function') playSnd('tap');
     var fn = window['startGame_' + gameId];
@@ -221,7 +328,6 @@ var APP = {
     else if (typeof showToast === 'function') showToast('🚧 ' + t('soon'));
   },
 
-  // ============ ابزار ============
   openTool: function(toolId) {
     if (typeof playSnd === 'function') playSnd('tap');
     var fn = window['openTool_' + toolId];
@@ -229,7 +335,6 @@ var APP = {
     else if (typeof showToast === 'function') showToast('🚧 ' + t('soon'));
   },
 
-  // ============ منوی بازی‌ها ============
   renderGamesMenu: function() {
     var c = document.getElementById('gamesContent');
     if (!c) return;
@@ -256,7 +361,6 @@ var APP = {
     c.innerHTML = html;
   },
 
-  // ============ منوی ابزارها ============
   renderToolsMenu: function() {
     var c = document.getElementById('toolsContent');
     if (!c) return;
