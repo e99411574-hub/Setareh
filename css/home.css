@@ -5,7 +5,6 @@
   padding-bottom: 100px;
 }
 
-/* پس‌زمینه گرادیانتی */
 .home-abd::before {
   content: '';
   position: fixed;
@@ -21,7 +20,105 @@
   pointer-events: none;
 }
 
-/* ============ کارت اصلی بخش ============ */
+/* ============ نوار بالا ============ */
+.top-bar-abd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 4px 14px;
+  gap: 10px;
+}
+
+.user-profile-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.avatar-mini {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #6C5CE7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+  border: 3px solid #fff;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
+
+.user-profile-mini .info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.user-profile-mini .name {
+  font-size: 15px;
+  font-weight: 900;
+  color: #2d1b4e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-profile-mini .date {
+  font-size: 11px;
+  color: #b8a8d8;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.currency-abd {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cur {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #fff;
+  padding: 5px 10px 5px 7px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(120, 80, 180, 0.12);
+}
+
+.cur-icon {
+  font-size: 16px;
+}
+
+.cur-icon.pani {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #81ecec, #00cec9);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 206, 201, 0.4);
+}
+
+.cur-val {
+  font-size: 12px;
+  font-weight: 900;
+  color: #2d1b4e;
+}
+
+/* ============ کارت ============ */
 .abad-card {
   background: #fff;
   border-radius: 22px;
@@ -31,7 +128,6 @@
   position: relative;
 }
 
-/* ============ تیتر بخش ============ */
 .abad-title {
   display: flex;
   align-items: center;
@@ -50,8 +146,20 @@
   gap: 6px;
 }
 
-.abad-title .icon {
-  font-size: 16px;
+.abad-title .icon { font-size: 16px; }
+
+.abad-title .info-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid #b8a8d8;
+  color: #b8a8d8;
+  font-size: 12px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: serif;
 }
 
 .abad-title .more {
@@ -72,11 +180,9 @@
   scrollbar-width: none;
 }
 
-.abad-row::-webkit-scrollbar {
-  display: none;
-}
+.abad-row::-webkit-scrollbar { display: none; }
 
-/* ============ کارت کوچیک بازی ============ */
+/* ============ تایل بازی ============ */
 .abad-tile {
   flex-shrink: 0;
   min-width: 76px;
@@ -94,163 +200,263 @@
   overflow: hidden;
 }
 
-.abad-tile:active {
-  transform: scale(0.94);
-}
+.abad-tile:active { transform: scale(0.94); }
 
-.abad-tile .t-icon {
-  font-size: 26px;
-  line-height: 1;
-}
+.abad-tile .t-icon { font-size: 26px; line-height: 1; }
 
 .abad-tile .t-label {
   font-size: 10px;
   font-weight: 800;
   color: #2d1b4e;
   text-align: center;
-  letter-spacing: -0.2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
 }
 
-/* رنگ‌های tile */
-.abad-tile.c-pink   { background: linear-gradient(160deg, #fce4ec, #f8bbd0); }
-.abad-tile.c-purple { background: linear-gradient(160deg, #ede7f6, #d1c4e9); }
-.abad-tile.c-blue   { background: linear-gradient(160deg, #e3f2fd, #bbdefb); }
-.abad-tile.c-green  { background: linear-gradient(160deg, #e8f5e9, #c8e6c9); }
-.abad-tile.c-yellow { background: linear-gradient(160deg, #fff8e1, #ffecb3); }
-.abad-tile.c-orange { background: linear-gradient(160deg, #fff3e0, #ffe0b2); }
-.abad-tile.c-teal   { background: linear-gradient(160deg, #e0f2f1, #b2dfdb); }
+.abad-tile.c-pink     { background: linear-gradient(160deg, #fce4ec, #f8bbd0); }
+.abad-tile.c-purple   { background: linear-gradient(160deg, #ede7f6, #d1c4e9); }
+.abad-tile.c-blue     { background: linear-gradient(160deg, #e3f2fd, #bbdefb); }
+.abad-tile.c-green    { background: linear-gradient(160deg, #e8f5e9, #c8e6c9); }
+.abad-tile.c-yellow   { background: linear-gradient(160deg, #fff8e1, #ffecb3); }
+.abad-tile.c-orange   { background: linear-gradient(160deg, #fff3e0, #ffe0b2); }
+.abad-tile.c-teal     { background: linear-gradient(160deg, #e0f2f1, #b2dfdb); }
 .abad-tile.c-lavender { background: linear-gradient(160deg, #f3e5f5, #e1bee7); }
 
-/* ============ کارت بزرگ (بدون اسکرول) ============ */
-.abad-wide {
-  display: flex;
-  gap: 10px;
-  align-items: stretch;
-}
-
-.abad-big {
-  flex: 1;
-  padding: 14px;
-  border-radius: 18px;
-  position: relative;
+/* ============ حرف آباد (شعر) ============ */
+.harf-card {
+  background: linear-gradient(135deg, #fef6ff, #f5eaff);
+  border: 1px solid rgba(186, 104, 200, 0.15);
   overflow: hidden;
-  cursor: pointer;
-  transition: transform 0.18s ease;
+  padding: 0;
+}
+
+.harf-inner {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 90px;
+  gap: 12px;
+  padding: 16px;
 }
 
-.abad-big:active {
-  transform: scale(0.97);
-}
-
-.abad-big .b-title {
-  font-size: 13px;
-  font-weight: 900;
-  color: #fff;
-  letter-spacing: -0.3px;
-  z-index: 1;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.15);
-}
-
-.abad-big .b-sub {
-  font-size: 10px;
-  color: rgba(255,255,255,0.9);
-  margin-top: 2px;
-  z-index: 1;
-  font-weight: 600;
-}
-
-.abad-big .b-icon {
-  position: absolute;
-  bottom: -8px;
-  left: -8px;
-  font-size: 56px;
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-/* ============ کارت ماموریت ============ */
-.mission-tile {
+.harf-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #e8dcf5, #d5c4ec);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
   flex-shrink: 0;
-  width: 155px;
-  padding: 12px;
-  border-radius: 18px;
-  background: #f8f4ff;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  cursor: pointer;
-  transition: transform 0.18s ease;
   position: relative;
   overflow: hidden;
 }
 
-.mission-tile:active {
-  transform: scale(0.97);
+.harf-image::before {
+  content: '🕯️';
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  font-size: 20px;
+  opacity: 0.6;
 }
 
-.mission-tile .m-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 800;
-  color: #6C5CE7;
+.harf-image .plant {
+  font-size: 52px;
 }
 
-.mission-tile .m-body {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.mission-tile .m-icon {
-  font-size: 32px;
-}
-
-.mission-tile .m-info {
+.harf-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   min-width: 0;
 }
 
-.mission-tile .m-text {
-  font-size: 11px;
-  color: #2d1b4e;
+.harf-poem {
+  font-size: 13px;
   font-weight: 700;
-  line-height: 1.3;
+  color: #4a3a6b;
+  line-height: 1.7;
+  text-align: right;
+}
+
+.harf-poet {
+  font-size: 11px;
+  color: #b8a8d8;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.harf-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: #6C5CE7;
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.2);
+}
+
+/* ============ ماموریت ============ */
+.missions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.mission-tile {
+  padding: 10px 8px;
+  border-radius: 14px;
+  background: #f8f4ff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.18s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 90px;
+}
+
+.mission-tile:active { transform: scale(0.96); }
+
+.mission-tile.m-done {
+  background: linear-gradient(135deg, #d4f5e0, #c8e6c9);
+  box-shadow: inset 0 0 0 2px rgba(0, 184, 148, 0.3);
+}
+
+.mission-tile .m-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: #fff;
+  color: #6C5CE7;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.mission-tile .m-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 14px;
+}
+
+.mission-tile .m-icon { font-size: 22px; }
+
+.mission-tile .m-nums {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #6C5CE7;
 }
 
 .mission-tile .m-prog {
   font-size: 10px;
   color: #b8a8d8;
-  font-weight: 700;
-  margin-top: 4px;
-}
-
-.mission-tile .m-claim {
-  background: linear-gradient(135deg, #6C5CE7, #0984E3);
-  color: #fff;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 10px;
   font-weight: 800;
-  cursor: pointer;
-  align-self: flex-start;
+  text-align: center;
 }
 
-/* ============ کارت کاربر (امتیازات) ============ */
-.user-score {
+.mission-tile .m-reward {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #E67E22;
+  padding: 3px 6px;
+  background: rgba(253, 203, 110, 0.2);
+  border-radius: 8px;
+  margin-top: auto;
+}
+
+/* ============ شانس آباد ============ */
+.chance-tile {
   flex-shrink: 0;
-  width: 72px;
+  width: 130px;
+  padding: 14px 10px;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.18s ease;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.chance-tile:active { transform: scale(0.95); }
+
+.chance-tile.c-wheel  { background: linear-gradient(160deg, #d4b8f0, #b894e8); }
+.chance-tile.c-lottery{ background: linear-gradient(160deg, #ffe0b2, #ffcc80); }
+.chance-tile.c-gift   { background: linear-gradient(160deg, #b8e6b8, #a5d6a7); }
+
+.chance-tile .ch-icon {
+  font-size: 38px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
+
+.chance-tile .ch-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #2d1b4e;
+}
+
+.chance-tile .ch-sub {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(45, 27, 78, 0.65);
+  line-height: 1.3;
+}
+
+.chance-tile .ch-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #e74c3c;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 8px;
+}
+
+/* ============ کاربران ============ */
+.users-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 2px 6px;
+  scrollbar-width: none;
+}
+
+.users-row::-webkit-scrollbar { display: none; }
+
+.user-badge {
+  flex-shrink: 0;
+  width: 68px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -259,13 +465,11 @@
   transition: transform 0.18s ease;
 }
 
-.user-score:active {
-  transform: scale(0.94);
-}
+.user-badge:active { transform: scale(0.94); }
 
-.user-score .us-avatar {
-  width: 56px;
-  height: 56px;
+.user-badge .ub-avatar {
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   background: linear-gradient(135deg, #b8a0e8, #8b5cf6);
   display: flex;
@@ -276,26 +480,22 @@
   font-weight: 900;
   overflow: hidden;
   border: 3px solid #fff;
-  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.25);
   position: relative;
 }
 
-.user-score .us-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.user-badge .ub-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-.user-score .us-rank {
+.user-badge .ub-rank {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 22px;
-  height: 22px;
+  top: -6px;
+  right: -6px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: linear-gradient(135deg, #FDCB6E, #E67E22);
   color: #fff;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   display: flex;
   align-items: center;
@@ -304,9 +504,21 @@
   z-index: 2;
 }
 
-.user-score .us-name {
+.user-badge .ub-online {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #00b894;
+  border: 2.5px solid #fff;
+  z-index: 2;
+}
+
+.user-badge .ub-name {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
   color: #2d1b4e;
   text-align: center;
   max-width: 100%;
@@ -315,64 +527,15 @@
   white-space: nowrap;
 }
 
-.user-score .us-val {
+.user-badge .ub-val {
   font-size: 10px;
   font-weight: 900;
   color: #6C5CE7;
 }
 
-/* ============ کارت چت بزرگ ============ */
-.chat-big {
-  width: 100%;
-  padding: 14px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #f8f4ff, #ede7f6);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition: transform 0.18s ease;
-}
-
-.chat-big:active {
-  transform: scale(0.98);
-}
-
-.chat-big .cb-icon {
-  font-size: 40px;
-}
-
-.chat-big .cb-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.chat-big .cb-title {
-  font-size: 13px;
-  font-weight: 900;
-  color: #2d1b4e;
-}
-
-.chat-big .cb-sub {
-  font-size: 11px;
-  color: #6b5b8b;
-  margin-top: 2px;
-  font-weight: 600;
-}
-
-.chat-big .cb-arrow {
-  font-size: 22px;
-  color: #6C5CE7;
-  font-weight: 300;
-}
-
 /* ============ حالت شب ============ */
 body[data-dark="true"] .home-abd::before {
   background-color: #1a1230;
-  background:
-    radial-gradient(circle at 10% 5%, rgba(108, 92, 231, 0.4), transparent 40%),
-    radial-gradient(circle at 90% 10%, rgba(9, 132, 227, 0.35), transparent 40%),
-    radial-gradient(circle at 50% 95%, rgba(232, 67, 147, 0.2), transparent 40%);
 }
 
 body[data-dark="true"] .abad-card {
@@ -381,9 +544,10 @@ body[data-dark="true"] .abad-card {
 
 body[data-dark="true"] .abad-title,
 body[data-dark="true"] .abad-tile .t-label,
-body[data-dark="true"] .mission-tile .m-text,
-body[data-dark="true"] .user-score .us-name,
-body[data-dark="true"] .chat-big .cb-title {
+body[data-dark="true"] .harf-poem,
+body[data-dark="true"] .chance-tile .ch-title,
+body[data-dark="true"] .user-badge .ub-name,
+body[data-dark="true"] .user-profile-mini .name {
   color: #f0e8ff;
 }
 
@@ -391,10 +555,8 @@ body[data-dark="true"] .mission-tile {
   background: #3a2e5c;
 }
 
-body[data-dark="true"] .chat-big {
-  background: linear-gradient(135deg, #3a2e5c, #2a2145);
+body[data-dark="true"] .cur,
+body[data-dark="true"] .avatar-mini {
+  background: #3a2e5c;
+  color: #f0e8ff;
 }
-
-body[data-dark="true"] .chat-big .cb-sub {
-  color: #b8a8d8;
-    }
