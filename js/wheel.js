@@ -1,269 +1,216 @@
-// ===== wheel.js - گردونهٔ شانس روزانه =====
+// ===== js/wheel.js — گردونهٔ شانس (الماس + پانی) =====
 
 var WHEEL = {
-  spinning: false,
-  lastSpinTime: 0,
-  cooldownMs: 12 * 60 * 60 * 1000, // ۱۲ ساعت
-  currentRotation: 0,
-  timerInterval: null,
-
-  // بخش‌های گردونه (۸ بخش)
+  // ۸ بخش گردونه
   segments: [
-    { id: 0, label: '۱۰ سکه',  icon: '🪙', type: 'coin',  amount: 10,  color: '#8b5cf6' },
-    { id: 1, label: 'پوچ',      icon: '😢', type: 'none',  amount: 0,   color: '#b8b8d0' },
-    { id: 2, label: '۲ جم',     icon: '💎', type: 'gem',   amount: 2,   color: '#E84393' },
-    { id: 3, label: '۵ سکه',   icon: '🪙', type: 'coin',  amount: 5,   color: '#FDCB6E' },
-    { id: 4, label: 'پوچ',      icon: '😢', type: 'none',  amount: 0,   color: '#b8b8d0' },
-    { id: 5, label: '۵ جم',     icon: '💎', type: 'gem',   amount: 5,   color: '#00B894' },
-    { id: 6, label: '۲۰ سکه',  icon: '🪙', type: 'coin',  amount: 20,  color: '#0984E3' },
-    { id: 7, label: '۱ جم',     icon: '💎', type: 'gem',   amount: 1,   color: '#E17055' }
+    { type: 'gems', amount: 100,  label: '۱۰۰ الماس',  icon: '💎', color: '#b8a0e8' },
+    { type: 'pani', amount: 20,   label: '۲۰ پانی',    icon: '🔷', color: '#81ecec' },
+    { type: 'gems', amount: 300,  label: '۳۰۰ الماس',  icon: '💎', color: '#a78bfa' },
+    { type: 'none', amount: 0,    label: 'پوچ',        icon: '😢', color: '#dfe6e9' },
+    { type: 'pani', amount: 50,   label: '۵۰ پانی',    icon: '🔷', color: '#74c0fc' },
+    { type: 'gems', amount: 200,  label: '۲۰۰ الماس',  icon: '💎', color: '#8b5cf6' },
+    { type: 'gems', amount: 500,  label: '۵۰۰ الماس',  icon: '💎', color: '#6C5CE7' },
+    { type: 'pani', amount: 100,  label: '۱۰۰ پانی',   icon: '🔷', color: '#00cec9' }
   ],
 
-  // ========== شروع ==========
+  DAILY_MS: 24 * 60 * 60 * 1000,
+  _spinning: false,
+
   init: function() {
-    this._loadState();
-    this.currentRotation = 0;
-    this._startTimer();
+    console.log('🎡 WHEEL: آماده');
   },
 
-  _loadState: function() {
-    try {
-      var t = localStorage.getItem('setareh_wheel_last');
-      this.lastSpinTime = t ? parseInt(t) : 0;
-    } catch (e) { this.lastSpinTime = 0; }
+  // ============ چک روزانه ============
+  _canSpin: function() {
+    var data = STATE.get('wheel') || {};
+    var now = Date.now();
+    if (!data.lastSpin) return true;
+    return (now - data.lastSpin) >= this.DAILY_MS;
   },
 
-  _saveState: function() {
-    try {
-      localStorage.setItem('setareh_wheel_last', String(this.lastSpinTime));
-    } catch (e) {}
+  _remainingTime: function() {
+    var data = STATE.get('wheel') || {};
+    if (!data.lastSpin) return 0;
+    var rem = this.DAILY_MS - (Date.now() - data.lastSpin);
+    return Math.max(0, rem);
   },
 
-  // ========== بررسی قفل ==========
-  isLocked: function() {
-    if (!this.lastSpinTime) return false;
-    var elapsed = Date.now() - this.lastSpinTime;
-    return elapsed < this.cooldownMs;
+  _formatRemaining: function() {
+    var ms = this._remainingTime();
+    if (ms <= 0) return '';
+    var h = Math.floor(ms / 3600000);
+    var m = Math.floor((ms % 3600000) / 60000);
+    var toFa = function(n) { return String(n).replace(/\d/g, function(x) { return ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'][+x]; }); };
+    if (h > 0) return toFa(h) + ' ساعت و ' + toFa(m) + ' دقیقه';
+    return toFa(m) + ' دقیقه';
   },
 
-  getRemainingMs: function() {
-    if (!this.lastSpinTime) return 0;
-    var elapsed = Date.now() - this.lastSpinTime;
-    var remaining = this.cooldownMs - elapsed;
-    return remaining > 0 ? remaining : 0;
+  // ============ باز کردن گردونه ============
+  open: function() {
+    var canSpin = this._canSpin();
+    var remaining = canSpin ? '' : this._formatRemaining();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'wheelOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);' +
+      'display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;backdrop-filter:blur(8px);';
+
+    var segsHtml = '';
+    var n = this.segments.length;
+    var angle = 360 / n;
+
+    this.segments.forEach(function(s, i) {
+      var rot = i * angle;
+      segsHtml += '<div class="wheel-seg" style="position:absolute;top:0;left:50%;width:0;height:50%;' +
+        'transform-origin:bottom center;transform:translateX(-50%) rotate(' + rot + 'deg);">' +
+        '<div style="position:absolute;top:8px;left:-30px;width:60px;text-align:center;">' +
+        '<div style="font-size:22px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3));">' + s.icon + '</div>' +
+        '<div style="font-size:9px;color:#fff;font-weight:900;text-shadow:0 1px 3px rgba(0,0,0,.6);margin-top:2px;">' + s.label + '</div>' +
+        '</div>' +
+        '</div>';
+    });
+
+    var conicStr = '';
+    this.segments.forEach(function(s, i) {
+      var start = i * angle;
+      var end = (i + 1) * angle;
+      conicStr += s.color + ' ' + start + 'deg ' + end + 'deg';
+      if (i < n - 1) conicStr += ', ';
+    });
+
+    overlay.innerHTML = `
+      <div style="background:linear-gradient(160deg,#f8f4ff,#ede7f6);border-radius:28px;padding:24px;width:100%;max-width:420px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+        <div style="text-align:center;margin-bottom:16px;">
+          <div style="font-size:20px;font-weight:900;color:#4a3a6b;">🎡 گردونهٔ شانس</div>
+          <div style="font-size:12px;color:#b8a8d8;margin-top:4px;">${canSpin ? 'امروز شانست رو امتحان کن!' : 'دفعهٔ بعد: ' + remaining}</div>
+        </div>
+
+        <div style="position:relative;width:280px;height:280px;margin:0 auto;filter:drop-shadow(0 8px 24px rgba(108,92,231,.3));">
+          <!-- فلش بالا -->
+          <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:32px;z-index:10;filter:drop-shadow(0 3px 6px rgba(0,0,0,.3));">▼</div>
+
+          <!-- چرخ -->
+          <div id="wheelDisk" style="position:relative;width:100%;height:100%;border-radius:50%;background:conic-gradient(from -22.5deg, ${conicStr});border:8px solid #FDCB6E;box-shadow:inset 0 0 0 4px #fff, 0 0 0 4px #E67E22, 0 4px 16px rgba(230,126,34,.5);transition:transform 4s cubic-bezier(.17,.67,.2,1);">
+            ${segsHtml}
+          </div>
+
+          <!-- دکمهٔ مرکز -->
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#FDCB6E,#E67E22);display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;font-weight:900;box-shadow:0 4px 12px rgba(0,0,0,.3),inset 0 2px 4px rgba(255,255,255,.4);border:3px solid #fff;z-index:5;cursor:pointer;" onclick="WHEEL.spin()">⭐</div>
+        </div>
+
+        ${canSpin
+          ? '<button id="spinBtn" onclick="WHEEL.spin()" style="width:100%;margin-top:20px;padding:16px;border:none;border-radius:16px;background:linear-gradient(135deg,#6C5CE7,#0984E3);color:#fff;font-family:inherit;font-weight:900;font-size:16px;cursor:pointer;box-shadow:0 6px 20px rgba(108,92,231,.4);">🎯 بچرخون!</button>'
+          : '<button disabled style="width:100%;margin-top:20px;padding:16px;border:none;border-radius:16px;background:#dfe6e9;color:#95a5a6;font-family:inherit;font-weight:900;font-size:16px;cursor:not-allowed;">⏳ ' + remaining + ' دیگر</button>'
+        }
+
+        <button onclick="WHEEL.close()" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:14px;background:rgba(0,0,0,.06);color:#6b5b8b;font-family:inherit;font-weight:800;font-size:14px;cursor:pointer;">بستن</button>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    if (typeof playSnd === 'function') playSnd('tap');
   },
 
-  _formatRemaining: function(ms) {
-    if (ms <= 0) return '۰۰:۰۰:۰۰';
-    var totalSec = Math.floor(ms / 1000);
-    var hrs = Math.floor(totalSec / 3600);
-    var mins = Math.floor((totalSec % 3600) / 60);
-    var secs = totalSec % 60;
-    var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
-    var str = pad(hrs) + ':' + pad(mins) + ':' + pad(secs);
-    return (typeof toFa === 'function') ? toFa(str) : str;
+  close: function() {
+    var el = document.getElementById('wheelOverlay');
+    if (el) el.remove();
   },
 
-  _startTimer: function() {
-    var self = this;
-    if (this.timerInterval) clearInterval(this.timerInterval);
-    this.timerInterval = setInterval(function() {
-      var el = document.getElementById('wheelLockTime');
-      if (!el) return;
-      if (self.isLocked()) {
-        el.textContent = self._formatRemaining(self.getRemainingMs());
-      } else {
-        // قفل باز شد — رفرش کن
-        if (typeof APP !== 'undefined' && APP.renderHome) APP.renderHome();
-      }
-    }, 1000);
-  },
-
-  // ========== چرخوندن ==========
+  // ============ چرخاندن ============
   spin: function() {
-    if (this.spinning) return;
-    if (this.isLocked()) {
-      if (typeof showToast === 'function') showToast('⏳ هنوز آماده نیست!');
+    if (this._spinning) return;
+    if (!this._canSpin()) {
+      if (typeof showToast === 'function') showToast('⏳ هنوز وقت نشده');
       return;
     }
 
-    this.spinning = true;
+    this._spinning = true;
+
+    // انتخاب تصادفی یه بخش
+    var idx = Math.floor(Math.random() * this.segments.length);
+    var seg = this.segments[idx];
+
+    // محاسبهٔ زاویه
+    var n = this.segments.length;
+    var anglePerSeg = 360 / n;
+    // مرکز بخش انتخاب شده
+    var centerAngle = idx * anglePerSeg + anglePerSeg / 2;
+    // ۵ دور کامل + زاویهٔ برگشت (چون چرخش خلاف عقربه‌هاست)
+    var totalRotation = (360 * 5) + (360 - centerAngle);
+
+    var disk = document.getElementById('wheelDisk');
+    if (!disk) { this._spinning = false; return; }
+
+    disk.style.transform = 'rotate(' + totalRotation + 'deg)';
+
     if (typeof playSnd === 'function') playSnd('tap');
-
-    // انتخاب یه بخش تصادفی
-    var winnerIndex = Math.floor(Math.random() * this.segments.length);
-
-    // محاسبهٔ زاویه‌ای که باید بچرخه
-    // هر بخش = 360/8 = 45 درجه
-    var segmentAngle = 360 / this.segments.length;
-
-    // اشاره‌گر بالا قرار داره (زاویه 0 = بالا)
-    // بخش شماره n در بازه [n*45, (n+1)*45] قرار داره
-    // می‌خوایم بخش winnerIndex زیر اشاره‌گر بیاد
-    // مرکز بخش winnerIndex = winnerIndex*45 + 22.5
-    // برای اینکه این مرکز زیر اشاره‌گر بیاد (زاویه 0):
-    // rotation = 360 - centerAngle + randomOffsetWithinSegment
-    var centerAngle = winnerIndex * segmentAngle + segmentAngle / 2;
-    var randomOffset = (Math.random() - 0.5) * (segmentAngle - 10);
-    var targetRotation = 360 * 8 + (360 - centerAngle + randomOffset); // ۸ دور کامل + زاویه
-
-    // اضافه به چرخش فعلی
-    var newRotation = this.currentRotation + targetRotation;
-
-    var svg = document.getElementById('wheelSvg');
-    if (svg) {
-      svg.classList.add('spinning');
-      svg.style.transform = 'rotate(' + newRotation + 'deg)';
-    }
-
-    this.currentRotation = newRotation % 360;
 
     var self = this;
     setTimeout(function() {
-      self.spinning = false;
-      if (svg) svg.classList.remove('spinning');
-      self._showResult(winnerIndex);
-    }, 5100);
+      self._spinning = false;
+      self._applyReward(seg);
+    }, 4200);
   },
 
-  // ========== نمایش نتیجه ==========
-  _showResult: function(idx) {
-    var seg = this.segments[idx];
-    var isNone = seg.type === 'none';
+  // ============ اعمال جایزه ============
+  _applyReward: function(seg) {
+    var user = STATE.getUser();
 
-    // ذخیره زمان
-    this.lastSpinTime = Date.now();
-    this._saveState();
+    // ذخیره سابقهٔ چرخش
+    var data = STATE.get('wheel') || {};
+    data.lastSpin = Date.now();
+    STATE.set('wheel', data);
+    STATE.save('wheel');
 
-    // اگه جایزه داشت، اضافه کن
-    if (!isNone) {
-      if (seg.type === 'coin' && typeof SHOP !== 'undefined') {
-        SHOP.addCoins(seg.amount);
-      } else if (seg.type === 'gem' && typeof SHOP !== 'undefined') {
-        SHOP.addGems(seg.amount);
-      }
-      if (typeof playSnd === 'function') playSnd('success');
-
-      // به‌روزرسانی هدر
+    if (seg.type === 'gems') {
+      user.gems = (user.gems || 0) + seg.amount;
+      STATE.saveUser(user);
       if (typeof APP !== 'undefined' && APP.updateHeader) APP.updateHeader();
+      if (typeof playSnd === 'function') playSnd('success');
+      this._showResult('💎', seg.amount + ' الماس', '#6C5CE7');
+    } else if (seg.type === 'pani') {
+      user.pani = (user.pani || 0) + seg.amount;
+      STATE.saveUser(user);
+      if (typeof APP !== 'undefined' && APP.updateHeader) APP.updateHeader();
+      if (typeof playSnd === 'function') playSnd('success');
+      this._showResult('🔷', seg.amount + ' پانی', '#00cec9');
     } else {
       if (typeof playSnd === 'function') playSnd('error');
+      this._showResult('😢', 'این دفعه پوچ!', '#95a5a6');
     }
 
-    // مودال
-    var modal = document.getElementById('wheelModal');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'wheelModal';
-      modal.className = 'wheel-modal';
-      document.body.appendChild(modal);
+    // رفرش خانه
+    if (typeof APP !== 'undefined' && APP.renderHome) {
+      setTimeout(function() { APP.renderHome(); }, 100);
     }
-
-    var html = '<div class="wheel-modal-box">';
-
-    if (isNone) {
-      html += '<div class="wheel-modal-icon">😢</div>';
-      html += '<div class="wheel-modal-title lose">پوچ!</div>';
-      html += '<div class="wheel-modal-desc">این بار شانس یارت نبود<br>۱۲ ساعت دیگه دوباره امتحان کن</div>';
-    } else {
-      html += '<div class="wheel-modal-icon">🎉</div>';
-      html += '<div class="wheel-modal-title">تبریک!</div>';
-      html += '<div class="wheel-modal-desc">این جایزه رو بردی:</div>';
-      html += '<div class="wheel-modal-reward">' + seg.icon + ' ' + (typeof toFa === 'function' ? toFa(seg.amount) : seg.amount) + '</div>';
-    }
-
-    html += '<button class="wheel-modal-btn" onclick="WHEEL.closeModal()">باشه</button>';
-    html += '</div>';
-
-    modal.innerHTML = html;
-    modal.classList.add('show');
   },
 
-  closeModal: function() {
-    var modal = document.getElementById('wheelModal');
-    if (modal) modal.classList.remove('show');
+  // ============ نمایش نتیجه ============
+  _showResult: function(icon, text, color) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);' +
+      'display:flex;align-items:center;justify-content:center;z-index:10001;padding:20px;backdrop-filter:blur(10px);';
 
-    // رفرش کن که گردونه قفل بشه
-    if (typeof APP !== 'undefined' && APP.renderHome) APP.renderHome();
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:28px;padding:32px 24px;text-align:center;max-width:340px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:resultPop .4s cubic-bezier(.34,1.56,.64,1);">
+        <div style="font-size:72px;margin-bottom:12px;animation:resultSpin .8s ease;">${icon}</div>
+        <div style="font-size:20px;font-weight:900;color:${color};margin-bottom:6px;">${text}</div>
+        <div style="font-size:13px;color:#b8a8d8;margin-bottom:20px;">تبریک! به حساب اضافه شد</div>
+        <button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,${color},#8b5cf6);color:#fff;font-family:inherit;font-weight:900;font-size:15px;cursor:pointer;">عالیه!</button>
+      </div>
+      <style>
+        @keyframes resultPop { from{transform:scale(.6);opacity:0;} to{transform:scale(1);opacity:1;} }
+        @keyframes resultSpin { from{transform:rotate(0deg) scale(0);} to{transform:rotate(360deg) scale(1);} }
+      </style>
+    `;
+
+    document.body.appendChild(overlay);
   },
 
-  // ========== ساخت SVG گردونه ==========
-  buildSVG: function() {
-    var size = 300;
-    var cx = size / 2;
-    var cy = size / 2;
-    var r = size / 2 - 4;
-    var n = this.segments.length;
-    var anglePerSeg = 360 / n;
-
-    var svg = '<svg viewBox="0 0 ' + size + ' ' + size + '" xmlns="http://www.w3.org/2000/svg" id="wheelSvg" class="wheel-svg">';
-
-    // دایرهٔ بیرونی
-    svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="#ffffff" stroke="#FDCB6E" stroke-width="4"/>';
-
-    // بخش‌ها
-    for (var i = 0; i < n; i++) {
-      var startAngle = i * anglePerSeg - 90; // شروع از بالا
-      var endAngle = (i + 1) * anglePerSeg - 90;
-      var startRad = startAngle * Math.PI / 180;
-      var endRad = endAngle * Math.PI / 180;
-
-      var x1 = cx + r * Math.cos(startRad);
-      var y1 = cy + r * Math.sin(startRad);
-      var x2 = cx + r * Math.cos(endRad);
-      var y2 = cy + r * Math.sin(endRad);
-
-      var largeArc = anglePerSeg > 180 ? 1 : 0;
-      var path = 'M ' + cx + ' ' + cy + ' L ' + x1 + ' ' + y1 + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + x2 + ' ' + y2 + ' Z';
-
-      svg += '<path d="' + path + '" fill="' + this.segments[i].color + '" stroke="#ffffff" stroke-width="2"/>';
-
-      // متن/ایموجی روی بخش
-      var midAngle = (startAngle + endAngle) / 2;
-      var midRad = midAngle * Math.PI / 180;
-      var textR = r * 0.68;
-      var tx = cx + textR * Math.cos(midRad);
-      var ty = cy + textR * Math.sin(midRad);
-
-      svg += '<text x="' + tx + '" y="' + ty + '" text-anchor="middle" dominant-baseline="middle" font-size="26" fill="#ffffff" style="user-select:none">' + this.segments[i].icon + '</text>';
-
-      // متن جایزه کوچیک
-      var textR2 = r * 0.85;
-      var tx2 = cx + textR2 * Math.cos(midRad);
-      var ty2 = cy + textR2 * Math.sin(midRad);
-      svg += '<text x="' + tx2 + '" y="' + ty2 + '" text-anchor="middle" dominant-baseline="middle" font-size="10" font-weight="800" fill="#ffffff" style="user-select:none">' + this.segments[i].label + '</text>';
-    }
-
-    svg += '</svg>';
-    return svg;
-  },
-
-  // ========== رندر بخش گردونه برای صفحهٔ خانه ==========
-  renderSection: function() {
-    var locked = this.isLocked();
-    var html = '<div class="wheel-section">';
-
-    html += '<div class="wheel-title">🎡 گردونهٔ شانس</div>';
-
-    html += '<div class="wheel-container">';
-    html += '<div class="wheel-bg">' + this.buildSVG() + '</div>';
-    html += '<div class="wheel-pointer"></div>';
-    html += '<div class="wheel-center' + (locked ? ' disabled' : '') + '" onclick="WHEEL.spin()">🎁</div>';
-    html += '</div>';
-
-    if (locked) {
-      html += '<div class="wheel-lock">';
-      html += '<span class="icon">⏳</span>';
-      html += '<span>تا چرخش بعدی:</span>';
-      html += '<span class="time" id="wheelLockTime">' + this._formatRemaining(this.getRemainingMs()) + '</span>';
-      html += '</div>';
-    } else {
-      html += '<button class="wheel-spin-btn" onclick="WHEEL.spin()">🎯 بچرخون!</button>';
-    }
-
-    html += '</div>';
-    return html;
-  }
+  // ============ سازگاری ============
+  renderSection: function() { return ''; }
 };
 
-window.WHEEL = WHEEL;
+if (typeof window !== 'undefined') {
+  window.WHEEL = WHEEL;
+}
