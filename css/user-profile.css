@@ -1,0 +1,354 @@
+/* ===== css/user-profile.css — پروفایل کاربر (پاپ‌آپ) ===== */
+
+.up-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: upFadeIn .25s ease;
+}
+
+@keyframes upFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.up-box {
+  width: 100%;
+  max-width: 420px;
+  max-height: 92vh;
+  overflow-y: auto;
+  border-radius: 28px;
+  background: linear-gradient(160deg, #f5edf8 0%, #f0e8fc 100%);
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,.4);
+  animation: upPop .35s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+@keyframes upPop {
+  from { transform: scale(.85); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.up-box::-webkit-scrollbar { width: 0; }
+
+/* ============ دکمهٔ بستن ============ */
+.up-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,.9);
+  color: #6C5CE7;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  z-index: 5;
+}
+
+.up-close:active { transform: scale(.9); }
+
+/* ============ هدر آواتار ============ */
+.up-header {
+  padding: 40px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.up-avatar {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #6C5CE7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 68px;
+  color: #fff;
+  overflow: hidden;
+  border: 6px solid #fff;
+  box-shadow: 0 10px 30px rgba(108, 92, 231, .35);
+  position: relative;
+}
+
+.up-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.up-online {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #00b894;
+  border: 3px solid #fff;
+}
+
+/* ============ کارت اطلاعات ============ */
+.up-info-card {
+  margin: 0 16px 12px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 4px 16px rgba(120, 80, 180, .1);
+  position: relative;
+}
+
+.up-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  direction: rtl;
+}
+
+.up-verified {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff6b9d, #e74c3c);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.up-uname {
+  font-size: 20px;
+  font-weight: 900;
+  color: #2d1b4e;
+  direction: ltr;
+  margin-right: auto;
+}
+
+.up-age {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #4a3a6b;
+  font-weight: 700;
+}
+
+.up-age .cal-icon {
+  font-size: 16px;
+  opacity: 0.6;
+}
+
+.up-divider {
+  height: 1px;
+  background: rgba(0,0,0,.06);
+  margin: 12px 0;
+}
+
+.up-bio {
+  font-size: 13px;
+  color: #4a3a6b;
+  line-height: 1.7;
+  text-align: center;
+  font-weight: 600;
+}
+
+.up-bio.empty {
+  color: #b8a8d8;
+  font-style: italic;
+}
+
+/* ============ آمار ۳ تایی ============ */
+.up-stats {
+  margin: 0 16px 12px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 16px 8px;
+  box-shadow: 0 4px 16px rgba(120, 80, 180, .1);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.up-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  position: relative;
+}
+
+.up-stat:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 10%;
+  left: 0;
+  width: 1px;
+  height: 80%;
+  background: rgba(0,0,0,.06);
+}
+
+.up-stat .s-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.up-stat .s-icon.pani-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #81ecec, #00cec9);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 206, 201, .35);
+}
+
+.up-stat .s-val {
+  font-size: 18px;
+  font-weight: 900;
+  color: #2d1b4e;
+}
+
+.up-stat .s-lbl {
+  font-size: 11px;
+  color: #b8a8d8;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ============ دکمه‌ها ============ */
+.up-actions {
+  margin: 0 16px 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.up-btn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform .15s ease;
+}
+
+.up-btn:active { transform: scale(.96); }
+
+.up-btn.primary {
+  background: linear-gradient(135deg, #6C5CE7, #0984E3);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(108, 92, 231, .35);
+}
+
+.up-btn.secondary {
+  background: #fff;
+  color: #6C5CE7;
+  border: 2px solid #e0d5f5;
+  box-shadow: 0 4px 12px rgba(108, 92, 231, .1);
+}
+
+.up-btn.disabled {
+  background: #e8e4f0;
+  color: #b8a8d8;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: .7;
+}
+
+.up-btn .b-icon {
+  font-size: 18px;
+}
+
+/* ============ ایموجی‌های واکنش ============ */
+.up-reactions {
+  margin: 0 16px 12px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 10px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(120, 80, 180, .08);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.up-reactions::-webkit-scrollbar { display: none; }
+
+.up-reaction {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  background: #f8f4ff;
+  border-radius: 14px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform .15s ease;
+  border: none;
+  font-family: inherit;
+}
+
+.up-reaction:active { transform: scale(.9); }
+
+.up-reaction.active {
+  background: linear-gradient(135deg, #ffd6e8, #ffb8d4);
+}
+
+.up-reaction .r-count {
+  font-size: 11px;
+  font-weight: 900;
+  color: #6C5CE7;
+}
+
+.up-reaction .r-emoji { font-size: 16px; }
+
+.up-reaction-add {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px dashed #b8a8d8;
+  background: transparent;
+  color: #b8a8d8;
+  font-size: 18px;
+  font-weight: 300;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  }
