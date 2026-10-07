@@ -1,258 +1,149 @@
-// ===== missions.js - ماموریت‌های روزانه =====
+// ===== js/missions.js — ماموریت‌های بازی (ریست هر ۱۲ ساعت) =====
 
 var MISSIONS = {
-  data: {
-    gamesPlayed: 0,      // تعداد بازی‌های انجام‌شده
-    winsCount: 0,        // تعداد بردها
-    shopOpened: 0,       // فروشگاه باز شده
-    aiAsked: 0,          // سؤال از AI پرسیده شده
-    lastReset: 0         // زمان آخرین ریست
-  },
+  TWELVE_HOURS: 12 * 60 * 60 * 1000,
 
   // تعریف ماموریت‌ها
   list: [
-    {
-      id: 'gamesPlayed',
-      icon: '🎮',
-      label: '۳ بازی انجام بده',
-      target: 3,
-      reward: 5,
-      rewardType: 'gem'
-    },
-    {
-      id: 'winsCount',
-      icon: '🏆',
-      label: '۱ برد بگیر',
-      target: 1,
-      reward: 2,
-      rewardType: 'gem'
-    },
-    {
-      id: 'shopOpened',
-      icon: '🛒',
-      label: 'فروشگاه رو باز کن',
-      target: 1,
-      reward: 1,
-      rewardType: 'gem'
-    },
-    {
-      id: 'aiAsked',
-      icon: '❓',
-      label: 'یه سؤال از هوش مصنوعی بپرس',
-      target: 1,
-      reward: 2,
-      rewardType: 'gem'
-    }
+    { id: 'rps_win_5',    game: 'rps',    icon: '✊',  label: 'برد سنگ کاغذ',   target: 5,  reward: 500,  type: 'win' },
+    { id: 'rps_win_20',   game: 'rps',    icon: '🏆',  label: 'برد سنگ کاغذ',   target: 20, reward: 1500, type: 'win' },
+    { id: 'ttt_win_3',    game: 'ttt',    icon: '❌',  label: 'برد دوز',         target: 3,  reward: 700,  type: 'win' },
+    { id: 'guess_win_5',  game: 'guess',  icon: '🔢',  label: 'برد حدس عدد',    target: 5,  reward: 500,  type: 'win' },
+    { id: 'memory_win_3', game: 'memory', icon: '🃏',  label: 'برد حافظه',       target: 3,  reward: 600,  type: 'win' },
+    { id: 'play_total_20',game: 'all',    icon: '🎮',  label: 'بازی کل',         target: 20, reward: 800,  type: 'play' }
   ],
 
-  rewarded: {},   // { missionId: true }  نشون می‌ده کدوم‌ها جایزه گرفتن
-
-  // ========== راه‌اندازی ==========
   init: function() {
-    this._load();
-    this._checkReset();
+    this.checkReset();
+    console.log('🎯 MISSIONS: آماده');
   },
 
-  // ========== بارگذاری ==========
-  _load: function() {
-    try {
-      var raw = localStorage.getItem('setareh_missions');
-      if (raw) {
-        var parsed = JSON.parse(raw);
-        if (parsed.data) this.data = parsed.data;
-        if (parsed.rewarded) this.rewarded = parsed.rewarded;
+  // ============ چک ریست ============
+  checkReset: function() {
+    var data = STATE.get('missions') || {};
+    var now = Date.now();
+    if (!data.lastReset || (now - data.lastReset) > this.TWELVE_HOURS) {
+      data = {
+        lastReset: now,
+        progress: {},
+        claimed: {}
+      };
+      this.list.forEach(function(m) {
+        data.progress[m.id] = 0;
+        data.claimed[m.id] = false;
+      });
+      STATE.set('missions', data);
+      STATE.save('missions');
+    }
+    return data;
+  },
+
+  // ============ ثبت بازی ============
+  trackGame: function(gameId, won) {
+    var data = this.checkReset();
+    var changed = false;
+
+    this.list.forEach(function(m) {
+      if (m.claimed) return;
+      // اگه ماموریت مربوط به این بازیه یا ماموریت کلی
+      if (m.game === gameId || m.game === 'all') {
+        // اگه type=win، فقط برد حساب میشه
+        if (m.type === 'win' && !won) return;
+        // اگه type=play، هر بازی حساب میشه
+        if (m.type === 'play') {
+          data.progress[m.id] = (data.progress[m.id] || 0) + 1;
+          changed = true;
+        } else if (m.type === 'win' && won) {
+          data.progress[m.id] = (data.progress[m.id] || 0) + 1;
+          changed = true;
+        }
       }
-    } catch (e) {
-      console.warn('Missions load error:', e);
+    });
+
+    if (changed) {
+      STATE.set('missions', data);
+      STATE.save('missions');
     }
   },
 
-  _save: function() {
-    try {
-      localStorage.setItem('setareh_missions', JSON.stringify({
-        data: this.data,
-        rewarded: this.rewarded
-      }));
-    } catch (e) {
-      console.warn('Missions save error:', e);
+  // ============ گرفتن جایزه ============
+  claim: function(missionId) {
+    var data = this.checkReset();
+    var m = this.list.find(function(x) { return x.id === missionId; });
+    if (!m) return;
+    if (data.claimed[m.id]) {
+      if (typeof showToast === 'function') showToast('❌ قبلاً گرفتی');
+      return;
     }
-  },
-
-  // ========== ریست روزانه ==========
-  _checkReset: function() {
-    var now = new Date();
-    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-
-    if (this.data.lastReset !== today) {
-      // ریست
-      this.data.gamesPlayed = 0;
-      this.data.winsCount = 0;
-      this.data.shopOpened = 0;
-      this.data.aiAsked = 0;
-      this.data.lastReset = today;
-      this.rewarded = {};
-      this._save();
-      console.log('🎯 ماموریت‌های روزانه ریست شدن');
-    }
-  },
-
-  // ========== ثبت رویدادها ==========
-  trackGame: function() {
-    this._checkReset();
-    this.data.gamesPlayed++;
-    this._save();
-    this._checkAll();
-  },
-
-  trackWin: function() {
-    this._checkReset();
-    this.data.winsCount++;
-    this._save();
-    this._checkAll();
-  },
-
-  trackShop: function() {
-    this._checkReset();
-    if (this.data.shopOpened === 0) {
-      this.data.shopOpened = 1;
-      this._save();
-      this._checkAll();
-    }
-  },
-
-  trackAI: function() {
-    this._checkReset();
-    if (this.data.aiAsked === 0) {
-      this.data.aiAsked = 1;
-      this._save();
-      this._checkAll();
-    }
-  },
-
-  // ========== بررسی همه ماموریت‌ها ==========
-  _checkAll: function() {
-    for (var i = 0; i < this.list.length; i++) {
-      var m = this.list[i];
-      var current = this.data[m.id] || 0;
-      if (current >= m.target && !this.rewarded[m.id]) {
-        this._giveReward(m);
-      }
-    }
-    // اگه توی صفحهٔ خانه هستیم، رندر کن
-    if (typeof APP !== 'undefined' && APP.renderHome && document.getElementById('homeContent')) {
-      // فقط اگه کاربر توی صفحهٔ خانه‌ست
-      if (document.getElementById('homeContent').innerHTML.indexOf('missions-section') >= 0) {
-        this._refreshHomeMissions();
-      }
-    }
-  },
-
-  // ========== دادن جایزه ==========
-  _giveReward: function(mission) {
-    this.rewarded[mission.id] = true;
-    this._save();
-
-    // اضافه کردن جم
-    if (mission.rewardType === 'gem' && typeof SHOP !== 'undefined') {
-      SHOP.addGems(mission.reward);
-    } else if (mission.rewardType === 'coin' && typeof SHOP !== 'undefined') {
-      SHOP.addCoins(mission.reward);
+    if ((data.progress[m.id] || 0) < m.target) {
+      if (typeof showToast === 'function') showToast('❌ هنوز کامل نشده');
+      return;
     }
 
-    // صدا
+    data.claimed[m.id] = true;
+    STATE.set('missions', data);
+    STATE.save('missions');
+
+    // اضافه کردن الماس
+    var user = STATE.getUser();
+    user.gems = (user.gems || 0) + m.reward;
+    STATE.saveUser(user);
+
+    if (typeof showToast === 'function') showToast('🎁 ' + m.reward + ' الماس گرفتی!');
     if (typeof playSnd === 'function') playSnd('success');
-
-    // پیام
-    this._showToast(mission);
-
-    // بروزرسانی هدر
     if (typeof APP !== 'undefined' && APP.updateHeader) APP.updateHeader();
+
+    // رفرش صفحه
+    if (typeof APP !== 'undefined' && APP.renderHome) APP.renderHome();
   },
 
-  // ========== پیام ماموریت ==========
-  _showToast: function(mission) {
-    var el = document.getElementById('missionToast');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'missionToast';
-      el.className = 'mission-toast';
-      document.body.appendChild(el);
-    }
+  // ============ رندر ماموریت‌های خانه ============
+  renderHome: function() {
+    var data = this.checkReset();
+    var self = this;
 
-    el.innerHTML = '<span class="icon">🎉</span>' +
-      '<span>ماموریت تکمیل شد! +' + (typeof toFa === 'function' ? toFa(mission.reward) : mission.reward) + ' 💎</span>';
-
-    setTimeout(function() {
-      el.classList.add('show');
-    }, 50);
-
-    setTimeout(function() {
-      el.classList.remove('show');
-    }, 3000);
-  },
-
-  // ========== بررسی تکمیل بودن ==========
-  isCompleted: function(missionId) {
-    return this.rewarded[missionId] === true;
-  },
-
-  getProgress: function(missionId) {
-    for (var i = 0; i < this.list.length; i++) {
-      if (this.list[i].id === missionId) {
-        return {
-          current: this.data[missionId] || 0,
-          target: this.list[i].target
-        };
-      }
-    }
-    return { current: 0, target: 1 };
-  },
-
-  // ========== بروزرسانی صفحهٔ خانه ==========
-  _refreshHomeMissions: function() {
-    var container = document.getElementById('missionsContainer');
-    if (container) {
-      container.innerHTML = this.render();
-    }
-  },
-
-  // ========== رندر ==========
-  render: function() {
-    var html = '<div class="missions-section">';
-    html += '<div class="missions-title"><span class="icon">🏆</span><span>ماموریت‌های روزانه</span></div>';
-
-    for (var i = 0; i < this.list.length; i++) {
-      var m = this.list[i];
-      var current = this.data[m.id] || 0;
-      if (current > m.target) current = m.target;
-      var completed = this.rewarded[m.id] === true;
-      var percent = Math.round((current / m.target) * 100);
-
-      html += '<div class="mission-card' + (completed ? ' completed' : '') + '" style="animation-delay:' + (i * 0.05) + 's">';
-
-      // ردیف بالا
-      html += '<div class="mission-top">';
-      html += '<div class="mission-icon">' + (completed ? '✅' : m.icon) + '</div>';
-      html += '<div class="mission-info">';
-      html += '<div class="mission-label">' + m.label + '</div>';
-      html += '</div>';
-      html += '<div class="mission-reward">' + (completed ? '✓ دریافت شد' : '🎁 ' + toFa(m.reward) + ' 💎') + '</div>';
-      html += '</div>';
-
-      // نوار پیشرفت
-      html += '<div class="mission-progress-wrap">';
-      html += '<div class="mission-progress">';
-      html += '<div class="mission-progress-fill" style="width:' + percent + '%"></div>';
-      html += '</div>';
-      html += '<div class="mission-progress-text">' + toFa(current) + '/' + toFa(m.target) + '</div>';
-      html += '</div>';
-
-      html += '</div>';
-    }
-
+    var html = '<div class="abad-card">';
+    html += '<div class="abad-title">';
+    html += '<div class="left"><span class="icon">🎯</span>ماموریت آباد ...</div>';
+    html += '<span class="info-icon">i</span>';
     html += '</div>';
+    html += '<div class="missions-grid">';
+
+    this.list.forEach(function(m) {
+      var prog = data.progress[m.id] || 0;
+      var isClaimed = data.claimed[m.id];
+      var isDone = prog >= m.target;
+
+      var cls = 'mission-tile';
+      if (isClaimed) cls += ' m-done';
+
+      var onclick = '';
+      if (isDone && !isClaimed) {
+        onclick = 'onclick="MISSIONS.claim(\'' + m.id + '\')"';
+      }
+
+      html += '<div class="' + cls + '" ' + onclick + '>';
+      html += '<div class="m-badge">' + prog + '</div>';
+      html += '<div class="m-top"><span class="m-icon">' + m.icon + '</span></div>';
+      html += '<div class="m-nums">' + prog + ' / ' + m.target + '</div>';
+      html += '<div class="m-reward">💎 ' + m.reward + '</div>';
+      html += '</div>';
+    });
+
+    html += '</div></div>';
     return html;
-  }
+  },
+
+  // ============ رندر قدیمی (سازگاری) ============
+  render: function() {
+    return '';
+  },
+
+  // ============ توابع قدیمی (سازگاری) ============
+  trackShop: function() {},
+  trackWin: function() {}
 };
 
-window.MISSIONS = MISSIONS;
+if (typeof window !== 'undefined') {
+  window.MISSIONS = MISSIONS;
+}
