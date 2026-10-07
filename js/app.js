@@ -95,9 +95,6 @@ var APP = {
     var user = STATE.getUser();
     if (!user) return;
 
-    var coinEl = document.getElementById('hdrCoins');
-    if (coinEl) coinEl.textContent = fmtNum(user.coins || 0);
-
     var gemEl = document.getElementById('hdrGems');
     if (gemEl) gemEl.textContent = fmtNum(user.gems || 0);
 
@@ -127,7 +124,6 @@ var APP = {
     try {
       var d = new Date();
       var faMonths = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-      // تبدیل تقریبی میلادی به شمسی (بدون کتابخانه)
       var gy = d.getFullYear();
       var gm = d.getMonth() + 1;
       var gd = d.getDate();
@@ -249,10 +245,10 @@ var APP = {
     html += '</div>';
     html += '</div>';
 
-    // ============ کاربران ============
+    // ============ لیست کاربران ============
     html += '<div class="abad-card">';
     html += '<div class="abad-title">';
-    html += '<div class="left"><span class="icon">👥</span>امتیاز آباد ...</div>';
+    html += '<div class="left"><span class="icon">👥</span>لیست کاربران</div>';
     html += '</div>';
     html += '<div class="users-row" id="homeUsersRow">';
     html += '<div style="text-align:center;padding:20px;color:#b8a8d8;font-size:12px;width:100%;">در حال بارگذاری...</div>';
@@ -284,8 +280,8 @@ var APP = {
       var res = await SB.from('users').select('*');
       var users = (res.data || []).filter(function(u) { return u.id !== me.id; });
 
-      // مرتب‌سازی بر اساس coins (میتونی به gems تغییر بدی)
-      users.sort(function(a, b) { return (b.coins || 0) - (a.coins || 0); });
+      // مرتب بر اساس pani
+      users.sort(function(a, b) { return (b.pani || 0) - (a.pani || 0); });
 
       if (!users.length) {
         box.innerHTML = '<div style="text-align:center;padding:20px;color:#b8a8d8;font-size:12px;width:100%;">هنوز کاربری نیست</div>';
@@ -297,15 +293,13 @@ var APP = {
         var name = (u.display_name || 'کاربر').substring(0, 12);
         var av = u.avatar === 'female' ? '👩' : '👨';
         var rank = idx + 1;
-        var isOnline = u.last_seen && (Date.now() - new Date(u.last_seen).getTime()) < 90000;
 
-        html += '<div class="user-badge" onclick="APP.openUserFromHome(\'' + u.id + '\')">';
+        html += '<div class="user-badge" onclick="APP.openUserProfile(\'' + u.id + '\')">';
         html += '<div class="ub-avatar">' + av;
         if (rank <= 3) html += '<div class="ub-rank">' + rank + '</div>';
-        if (isOnline) html += '<div class="ub-online"></div>';
         html += '</div>';
         html += '<div class="ub-name">' + APP._esc(name) + '</div>';
-        html += '<div class="ub-val">🪙 ' + fmtNum(u.coins || 0) + '</div>';
+        html += '<div class="ub-val"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#81ecec,#00cec9);color:#fff;font-size:9px;font-weight:900;line-height:14px;text-align:center;">P</span> ' + fmtNum(u.pani || 0) + '</div>';
         html += '</div>';
       });
       box.innerHTML = html;
@@ -315,17 +309,118 @@ var APP = {
     }
   },
 
-  // ============ باز کردن پروفایل کاربر از خانه ============
+  // ============ باز کردن پروفایل کاربر ============
   openUserFromHome: function(userId) {
-    if (typeof CHAT === 'undefined' || !CHAT.openRoom) {
-      ROUTER.go('chat');
+    this.openUserProfile(userId);
+  },
+
+  // ============ پروفایل کاربر (پاپ‌آپ) ============
+  openUserProfile: async function(userId) {
+    if (typeof SB === 'undefined') return;
+
+    var old = document.getElementById('userProfileOverlay');
+    if (old) old.remove();
+
+    var me = SB.getUser();
+    if (!me) return;
+
+    var res = await SB.from('users').select('*').eq('id', userId);
+    var user = (res.data || [])[0];
+    if (!user) {
+      if (typeof showToast === 'function') showToast('❌ کاربر پیدا نشد');
       return;
     }
-    // اگه دوست بود، چت باز کن، وگرنه برو به چت
-    ROUTER.go('chat');
-    setTimeout(function() {
-      // CHAT.openRoom خودش چک می‌کنه
-    }, 300);
+
+    // سن حساب
+    var ageText = 'جدید';
+    if (user.created_at) {
+      var days = Math.floor((Date.now() - new Date(user.created_at).getTime()) / (24 * 60 * 60 * 1000));
+      ageText = days + ' روز';
+    }
+
+    // آواتار
+    var avatar = '👨';
+    if (user.avatar === 'female') avatar = '👩';
+    if (user.avatar === 'custom' && user.avatar_url) {
+      avatar = '<img src="' + user.avatar_url + '" alt="">';
+    }
+
+    var allowPm = user.allow_pm !== false;
+
+    var bioHtml = user.bio
+      ? '<div class="up-bio">' + this._esc(user.bio) + '</div>'
+      : '<div class="up-bio empty">فاقد بیوگرافی</div>';
+
+    var html = '';
+    html += '<div class="up-box">';
+    html += '<button class="up-close" onclick="document.getElementById(\'userProfileOverlay\').remove()">✕</button>';
+
+    html += '<div class="up-header">';
+    html += '<div class="up-avatar">' + avatar + '</div>';
+    html += '</div>';
+
+    html += '<div class="up-info-card">';
+    html += '<div class="up-name-row">';
+    html += '<div class="up-uname">' + this._esc(user.display_name || 'کاربر') + '</div>';
+    if (user.is_verified) html += '<div class="up-verified">✓</div>';
+    html += '</div>';
+
+    html += '<div class="up-age">';
+    html += '<span>سن حساب: ' + ageText + '</span>';
+    html += '<span class="cal-icon">📅</span>';
+    html += '</div>';
+
+    html += '<div class="up-divider"></div>';
+    html += bioHtml;
+    html += '</div>';
+
+    html += '<div class="up-stats">';
+    html += '<div class="up-stat">';
+    html += '<div class="s-icon pani-icon">P</div>';
+    html += '<div class="s-val">' + fmtNum(user.pani || 0) + '</div>';
+    html += '<div class="s-lbl">پانی</div>';
+    html += '</div>';
+    html += '<div class="up-stat">';
+    html += '<div class="s-icon">💎</div>';
+    html += '<div class="s-val">' + fmtNum(user.gems || 0) + '</div>';
+    html += '<div class="s-lbl">الماس</div>';
+    html += '</div>';
+    html += '</div>';
+
+    html += '<div class="up-actions">';
+    if (allowPm) {
+      html += '<button class="up-btn primary" onclick="APP._openPm(\'' + userId + '\')"><span class="b-icon">💬</span>چت خصوصی</button>';
+    } else {
+      html += '<button class="up-btn disabled" disabled><span class="b-icon">🔒</span>پیوی بسته</button>';
+    }
+    html += '<button class="up-btn secondary" onclick="APP._openGroups(\'' + userId + '\')"><span class="b-icon">👥</span>گروه‌ها</button>';
+    html += '</div>';
+
+    html += '</div>';
+
+    var overlay = document.createElement('div');
+    overlay.className = 'up-overlay';
+    overlay.id = 'userProfileOverlay';
+    overlay.onclick = function(e) {
+      if (e.target === overlay) overlay.remove();
+    };
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+
+    if (typeof playSnd === 'function') playSnd('tap');
+  },
+
+  _openPm: function(userId) {
+    var overlay = document.getElementById('userProfileOverlay');
+    if (overlay) overlay.remove();
+    if (typeof CHAT !== 'undefined' && CHAT.openRoom) {
+      ROUTER.go('chat');
+      setTimeout(function() { CHAT.openRoom(userId); }, 300);
+    }
+  },
+
+  _openGroups: function(userId) {
+    if (typeof showToast === 'function') showToast('👥 گروه‌ها به‌زودی');
   },
 
   // ============ قرعه‌کشی ============
@@ -334,7 +429,6 @@ var APP = {
     var now = Date.now();
     var lottery = STATE.get('lottery') || { lastDraw: 0, entries: [], winner: null };
 
-    // ۱۲ ساعت ریست
     var TWELVE_HOURS = 12 * 60 * 60 * 1000;
     if (now - lottery.lastDraw > TWELVE_HOURS) {
       lottery = { lastDraw: now, entries: [], winner: null };
@@ -415,9 +509,9 @@ var APP = {
         .catch(function(e) {});
 
       poems = [
-        { poet: 'سعدی', text: 'مرا عهدی است با جانان که تا جان در بدن دارم / هواداران کویش را چو جان خویشتن دارم' },
+        { poet: 'مولانا', text: 'بشنو این نی چون شکایت می‌کند از جدایی‌ها حکایت می‌کند' },
         { poet: 'حافظ', text: 'گل آن باشد که در باغ آید و بی‌رنجِ خار آید' },
-        { poet: 'مولانا', text: 'از جان چه خبر داری کز جان خبرت نبود' },
+        { poet: 'سعدی', text: 'به راه بادیه رفتن به از نشستن باطل' },
         { poet: 'فردوسی', text: 'توانا بود هر که دانا بود' },
         { poet: 'خیام', text: 'در دیر مغان آیین کفر و دین نباشد' }
       ];
@@ -425,7 +519,7 @@ var APP = {
 
     var hours12 = Math.floor(Date.now() / (12 * 60 * 60 * 1000));
     var idx = hours12 % poems.length;
-    return poems[idx];
+        return poems[idx];
   },
 
   startGame: function(gameId) {
