@@ -49,6 +49,10 @@
     <span class="coin-icon">💎</span>
     <span id="hdrGems">۰</span>
   </div>
+  <div class="coin-pill pani" onclick="ROUTER.go('shop')" style="background:linear-gradient(135deg,#81ecec,#00cec9);color:#fff;">
+    <span class="coin-icon" style="background:#fff;color:#00cec9;width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;">P</span>
+    <span id="hdrPani">۰</span>
+  </div>
   <button class="menu-btn" id="menuBtn">☰</button>
 </div>
 
@@ -74,7 +78,7 @@
     </div>
   </div>
   <div class="menu-footer">
-    ⭐ ستاره — نسخه ۲.۰
+    ⭐ ستاره — نسخه ۲.۱
   </div>
 </aside>
 
@@ -194,19 +198,6 @@
 <!-- ۱۱. راه‌اندازی (آخر همه) -->
 <script src="js/app.js"></script>
 
-<!-- ============ PWA (غیرفعال موقت) ============ -->
-<!--
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('sw.js').catch(function(e) {
-        console.log('SW register failed:', e);
-      });
-    });
-  }
-</script>
--->
-
 <script>
   if (typeof window.showToast !== 'function') {
     window.showToast = function(msg) {
@@ -227,4 +218,4 @@
 <script>eruda.init();</script>
 
 </body>
-  </html>
+</html>
