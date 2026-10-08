@@ -1,7 +1,7 @@
 // ===== app.js — راه‌اندازی و صفحهٔ اصلی ستاره =====
 
 var APP = {
-  version: '2.1.0',
+  version: '2.1.1',
   _poemsCache: null,
 
   init: function() {
@@ -119,7 +119,6 @@ var APP = {
     if (el) el.textContent = t(key);
   },
 
-  // ============ تاریخ شمسی ============
   _formatFaDate: function() {
     try {
       var d = new Date();
@@ -146,7 +145,6 @@ var APP = {
     } catch(e) { return ''; }
   },
 
-  // ============ صفحهٔ خانه ============
   renderHome: function() {
     var c = document.getElementById('homeContent');
     if (!c) return;
@@ -156,7 +154,7 @@ var APP = {
 
     var html = '<div class="home-abd">';
 
-    // ============ نوار بالا ============
+    // نوار بالا
     var avatar = '👨';
     if (user.avatar === 'female') avatar = '👩';
     if (user.avatar === 'custom' && user.avatarImage) {
@@ -177,7 +175,7 @@ var APP = {
     html += '</div>';
     html += '</div>';
 
-    // ============ آنلاین آباد ============
+    // آنلاین آباد
     html += '<div class="abad-card">';
     html += '<div class="abad-title">';
     html += '<div class="left"><span class="icon">🎮</span>آنلاین آباد ...</div>';
@@ -200,7 +198,7 @@ var APP = {
     });
     html += '</div></div>';
 
-    // ============ حرف آباد (شعر) ============
+    // حرف آباد
     var poem = this._getPoemOfDay();
     html += '<div class="abad-card harf-card">';
     html += '<div class="abad-title" style="padding:14px 14px 0;">';
@@ -216,12 +214,12 @@ var APP = {
     html += '</div>';
     html += '</div>';
 
-    // ============ ماموریت آباد ============
+    // ماموریت
     if (typeof MISSIONS !== 'undefined' && MISSIONS.renderHome) {
       html += MISSIONS.renderHome();
     }
 
-    // ============ شانس آباد ============
+    // شانس آباد (بدون جعبه)
     html += '<div class="abad-card">';
     html += '<div class="abad-title">';
     html += '<div class="left"><span class="icon">🎡</span>شانس آباد ...</div>';
@@ -237,15 +235,10 @@ var APP = {
     html += '<div class="ch-title">قرعه‌کشی</div>';
     html += '<div class="ch-sub">۵۰۰ الماس ورودی<br>جایزه: ۵۰۰۰ الماس</div>';
     html += '</div>';
-    html += '<div class="chance-tile c-gift" onclick="ROUTER.go(\'shop\')">';
-    html += '<div class="ch-icon">🎁</div>';
-    html += '<div class="ch-title">جعبه</div>';
-    html += '<div class="ch-sub">جایزهٔ روزانه</div>';
-    html += '</div>';
     html += '</div>';
     html += '</div>';
 
-    // ============ لیست کاربران ============
+    // لیست کاربران
     html += '<div class="abad-card">';
     html += '<div class="abad-title">';
     html += '<div class="left"><span class="icon">👥</span>لیست کاربران</div>';
@@ -267,20 +260,21 @@ var APP = {
     });
   },
 
-  // ============ لود کاربران ============
   _loadHomeUsers: async function() {
     var box = document.getElementById('homeUsersRow');
     if (!box) return;
-    if (typeof SB === 'undefined' || !SB.isLoggedIn || !SB.isLoggedIn()) return;
+    if (typeof SB === 'undefined') return;
+
+    var me = SB.getUser();
+    if (!me) {
+      setTimeout(function() { APP._loadHomeUsers(); }, 2000);
+      return;
+    }
 
     try {
-      var me = SB.getUser();
-      if (!me) return;
-
       var res = await SB.from('users').select('*');
       var users = (res.data || []).filter(function(u) { return u.id !== me.id; });
 
-      // مرتب بر اساس pani
       users.sort(function(a, b) { return (b.pani || 0) - (a.pani || 0); });
 
       if (!users.length) {
@@ -309,12 +303,10 @@ var APP = {
     }
   },
 
-  // ============ باز کردن پروفایل کاربر ============
   openUserFromHome: function(userId) {
     this.openUserProfile(userId);
   },
 
-  // ============ پروفایل کاربر (پاپ‌آپ) ============
   openUserProfile: async function(userId) {
     if (typeof SB === 'undefined') return;
 
@@ -331,14 +323,12 @@ var APP = {
       return;
     }
 
-    // سن حساب
     var ageText = 'جدید';
     if (user.created_at) {
       var days = Math.floor((Date.now() - new Date(user.created_at).getTime()) / (24 * 60 * 60 * 1000));
       ageText = days + ' روز';
     }
 
-    // آواتار
     var avatar = '👨';
     if (user.avatar === 'female') avatar = '👩';
     if (user.avatar === 'custom' && user.avatar_url) {
@@ -423,7 +413,6 @@ var APP = {
     if (typeof showToast === 'function') showToast('👥 گروه‌ها به‌زودی');
   },
 
-  // ============ قرعه‌کشی ============
   openLottery: function() {
     var user = STATE.getUser();
     var now = Date.now();
@@ -494,7 +483,6 @@ var APP = {
     APP.openLottery();
   },
 
-  // ============ شعر روز ============
   _getPoemOfDay: function() {
     var poems = this._poemsCache;
     if (!poems) {
@@ -519,7 +507,7 @@ var APP = {
 
     var hours12 = Math.floor(Date.now() / (12 * 60 * 60 * 1000));
     var idx = hours12 % poems.length;
-        return poems[idx];
+    return poems[idx];
   },
 
   startGame: function(gameId) {
@@ -540,7 +528,7 @@ var APP = {
     var c = document.getElementById('gamesContent');
     if (!c) return;
 
-    var html = '<div class="section-title" style="margin:10px 0 16px"><span class="icon">🎮</span><span>بازی‌ها</span></div>';
+        var html = '<div class="section-title" style="margin:10px 0 16px"><span class="icon">🎮</span><span>بازی‌ها</span></div>';
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
 
     var games = [
